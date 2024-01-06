@@ -5,6 +5,23 @@ const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// JKO Pay
+app.get('/jko_pay', (req, res) => {
+  res.sendFile(path.join(__dirname, 'pages', 'jko_pay', 'index.html'));
+});
+
+app.get('/jko_pay/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'pages', 'jko_pay', 'login.html'));
+});
+
+app.get('/jko_pay/authentication', (req, res) => {
+  res.sendFile(path.join(__dirname, 'pages', 'jko_pay', 'authentication.html'));
+});
+
+app.get('/jko_pay/transfer', (req, res) => {
+  res.sendFile(path.join(__dirname, 'pages', 'jko_pay', 'transfer.html'));
+});
+
 // Line Pay
 app.get('/line_pay', (req, res) => {
   res.sendFile(path.join(__dirname, 'pages', 'line_pay', 'index.html'));

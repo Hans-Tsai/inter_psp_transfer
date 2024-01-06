@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JKO Pay</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h2 class="my-4">JKO Pay</h2>
+        <div class="form-group">
+            <label for="amount">轉帳金額:</label>
+            <input type="number" class="form-control" id="amount">
+        </div>
+        <div class="form-group">
+            <label for="institution">轉帳機構:</label>
+            <select class="form-control" id="institution">
+                <option value="institution1">機構1</option>
+                <option value="institution2">機構2</option>
+                <option value="institution3">機構3</option>
+                <!-- 可以添加更多機構選項 -->
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="note">備註:</label>
+            <input type="text" class="form-control" id="note">
+        </div>
+        <button class="btn btn-primary" onclick="confirmTransaction()">確認</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+<script>
+  function confirmTransaction() {
+    var amount = document.getElementById('amount').value;
+    var institution = document.getElementById('institution').value;
+    var note = document.getElementById('note').value;
+    alert("轉帳金額: " + amount + "\n轉帳機構: " + institution + "\n備註: " + note);
+}
+</script>
+</html>
