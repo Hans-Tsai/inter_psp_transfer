@@ -1,11 +1,13 @@
+const path = require('path');
+
 //#region 
 // 電子支付跨機構共用平台
 const platform_get = (req, res) => {
-  res.sendFile(path.join(__dirname, 'pages', 'platform', 'index.html'));
+  res.sendFile(path.join(__dirname, '..', 'pages', 'platform', 'index.html'));
 };
 
 const platform_code_get = (req, res) => {
-  res.sendFile(path.join(__dirname, 'pages', 'platform', 'code.html'));
+  res.sendFile(path.join(__dirname, '..', 'pages', 'platform', 'code.html'));
 };
 
 //#endregion
@@ -13,19 +15,19 @@ const platform_code_get = (req, res) => {
 //#region 
 // Line Pay
 const line_pay_get = (req, res) => {
-  res.sendFile(path.join(__dirname, 'pages', 'line_pay', 'index.html'));
+  res.sendFile(path.join(__dirname, '..', 'pages', 'line_pay', 'index.html'));
 };
 
 const line_pay_login_get = (req, res) => {
-  res.sendFile(path.join(__dirname, 'pages', 'line_pay', 'login.html'));
+  res.sendFile(path.join(__dirname, '..', 'pages', 'line_pay', 'login.html'));
 };
 
 const line_pay_authentication_get = (req, res) => {
-  res.sendFile(path.join(__dirname, 'pages', 'line_pay', 'authentication.html'));
+  res.sendFile(path.join(__dirname, '..', 'pages', 'line_pay', 'authentication.html'));
 };
 
 const line_pay_transfer_get = (req, res) => {
-  res.sendFile(path.join(__dirname, 'pages', 'line_pay', 'transfer.html'));
+  res.sendFile(path.join(__dirname, '..', 'pages', 'line_pay', 'transfer.html'));
 };
 
 //#endregion
@@ -33,19 +35,19 @@ const line_pay_transfer_get = (req, res) => {
 //#region 
 // JKO Pay
 const jko_pay_get = (req, res) => {
-  res.sendFile(path.join(__dirname, 'pages', 'jko_pay', 'index.html'));
+  res.sendFile(path.join(__dirname, '..', 'pages', 'jko_pay', 'index.html'));
 };
 
 const jko_pay_login_get = (req, res) => {
-  res.sendFile(path.join(__dirname, 'pages', 'jko_pay', 'login.html'));
+  res.sendFile(path.join(__dirname, '..', 'pages', 'jko_pay', 'login.html'));
 };
 
 const jko_pay_authentication_get = (req, res) => {
-  res.sendFile(path.join(__dirname, 'pages', 'jko_pay', 'authentication.html'));
+  res.sendFile(path.join(__dirname, '..', 'pages', 'jko_pay', 'authentication.html'));
 };
 
 const jko_pay_transfer_get = (req, res) => {
-  res.sendFile(path.join(__dirname, 'pages', 'jko_pay', 'transfer.html'));
+  res.sendFile(path.join(__dirname, '..', 'pages', 'jko_pay', 'transfer.html'));
 };
 
 //#endregion
