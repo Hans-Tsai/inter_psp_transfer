@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIDO UAF-跨機構轉帳 Demo</title>
+    <!-- 引入 Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <style>
+        body {
+          background-color: #f8f9fa;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-start;
+          height: 100vh;
+          margin: 0;
+          padding-top: 20px;
+        }
+        .btn {
+          width: 200px;
+          margin-top: 20px;
+        }
+      </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">FIDO UAF-跨機構轉帳 Demo</h1>
+        <!-- 按鈕們 -->
+        <div class="d-flex flex-column align-items-center">
+            <a href="/platform" class="btn btn-primary mb-2">電子支付<br>跨機構共用平台<br>首頁</a>
+            <a href="/line_pay" class="btn btn-secondary mb-2">Line Pay 首頁</a>
+            <a href="/jko_pay" class="btn btn-success">JKO Pay 首頁</a>
+        </div>
+    </div>
+
+    <!-- 引入 Bootstrap JavaScript 和相依的 Popper.js -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+</body>
+</html>

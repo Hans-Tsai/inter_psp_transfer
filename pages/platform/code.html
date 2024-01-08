@@ -26,15 +26,23 @@
   </style>
 </head>
 <body>
-  <h1>電子支付跨機構共用平台</h1>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/">首頁</a></li>
+      <li class="breadcrumb-item"><a href="/platform">電子支付跨機構共用平台</a></li>
+      <li class="breadcrumb-item active" aria-current="page">金融機構代號</li>
+    </ol>
+  </nav>
+  <h1>金融機構代號</h1>
   <ul class="institution-list" id="institutionList">
     <!-- 金融機構列表將在這裡動態生成 -->
   </ul>
   <script>
     var institutions = [
-      { code: '001', name: '機構A' },
-      { code: '002', name: '機構B' },
-      { code: '003', name: '機構C' },
+      { code: '390', name: '悠遊卡(股)公司' },
+      { code: '391', name: '一卡通(股)公司' },
+      { code: '396', name: '街口電子支付(股)公司' },
+      { code: '397', name: '歐付寶電子支付(股)公司' },
       // 更多機構...
     ];
 
