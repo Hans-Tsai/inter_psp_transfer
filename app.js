@@ -2,26 +2,14 @@ require('dotenv').config()
 const express = require('express');
 const path = require('path');
 const router = require('./routes/router');
-const mysql2 = require('mysql2');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // 連線到 MySQL 資料庫
-connection = mysql2.createConnection({
-  host     : process.env.DB_HOST || 'localhost',
-  user     : process.env.DB_USER || 'root',
-  password : process.env.DB_PASSWORD || 'root12345',
-});
- 
-connection.connect(function(err) {
-  if (err) {
-    console.error('error connecting: ' + err.stack);
-    return;
-  }
- 
-  console.log('Mysql is successfully connected as id ' + connection.threadId);
-});
+const knexConfig = require('./knexfile')[NODE_ENV];
+const knex = require('knex')(knexConfig);
 
 // Demo 首頁
 app.get('/', (req, res) => {
@@ -30,16 +18,17 @@ app.get('/', (req, res) => {
 
 app.use('/', router);
 
-const server = app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
+const server = app.listen(PORT, () => {
+  console.log(`Server is running at http://localhost:${PORT}`);
 });
 
 // 優雅地關閉資料庫連線
 function gracefulShutdown() {
   server.close(() => {
+      console.log('');
       console.log('The application server is gracefully terminated');
 
-      connection.end(err => {
+      knex.destroy(err => {
           if (err) {
               console.error('An error occurred while closing the database connection', err);
           } else {
