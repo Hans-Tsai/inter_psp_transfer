@@ -38,7 +38,8 @@ module.exports.seed = async function (knex) {
         // 建立資料表
         await knex.schema.createTable("line_pay", (table) => {
             table.increments("id").primary();
-            table.integer("account").notNullable().unique().checkLength("=", 10);
+            table.string("account").notNullable().unique().checkLength("=", 10);
+            table.string("password").notNullable().defaultTo("000000");
             table.integer("balance").notNullable().defaultTo(0);
             table.boolean("authenticated").defaultTo(false);
             // 其他欄位定義
@@ -55,7 +56,8 @@ module.exports.seed = async function (knex) {
         // 建立資料表
         await knex.schema.createTable("jko_pay", (table) => {
             table.increments("id").primary();
-            table.integer("account").notNullable().unique().checkLength("=", 9);
+            table.string("account").notNullable().unique().checkLength("=", 9);
+            table.string("password").notNullable().defaultTo("000000");
             table.integer("balance").notNullable().defaultTo(0);
             table.boolean("authenticated").defaultTo(false);
             // 其他欄位定義;
