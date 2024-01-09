@@ -12,9 +12,9 @@ const knex = require('./database/db');
 /** 中介函數 (middleware) */
 // 設定 express app 的靜態資料夾為 `./public/`
 app.use(express.static('public'));
-// 將 API request 夾帶的 JSON 資料"解析"成 Javascript 的物件 (object) 形式
+// 將 API request 夾帶的 JSON 資料"解析"成 Javascript 的物件 (object) 形式，並將其儲存到 `req.body` 屬性中
 app.use(express.json());
-// 將 API request 夾帶的 `cookie` 中的 `cookie header` 資料"解析"成 Javascript 的物件 (object) 形式。同時會產生 req.cookies 的屬性值，並綁定到 `request` 物件上
+// 將 API request 夾帶的 `cookie` 中的 `cookie header` 資料"解析"成 Javascript 的物件 (object) 形式，並將其儲存到 `req.cookies` 的屬性中
 app.use(cookieParser());
 
 // 指定 view engine 為 `ejs` 模板引擎
@@ -22,7 +22,7 @@ app.set('view engine', 'ejs');
 
 // Demo 首頁
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "views", "index.html"));
+    res.sendFile(path.join(__dirname, "views", "index.ejs"));
 });
 
 // 設定路由器
