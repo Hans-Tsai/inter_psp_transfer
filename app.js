@@ -1,30 +1,31 @@
 require("dotenv").config();
+const PORT = process.env.PORT || 3000;
+
 const express = require("express");
 const path = require("path");
 const router = require("./routes/router");
+const cookieParser = require('cookie-parser');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const NODE_ENV = process.env.NODE_ENV || "development";
+const knex = require('./database/db');
 
-// 連線到 MySQL 資料庫
-const knexConfig = require("./knexfile")[NODE_ENV];
-const knex = require("knex")(knexConfig);
-// 初始化資料庫
-const databaseName = "fido_uaf";
-knex.raw(`CREATE DATABASE IF NOT EXISTS ??`, [databaseName])
-    .then(() => {
-        console.log(`Database ${databaseName} created`);
-    })
-    .catch((err) => {
-        console.error("Error creating database:", err);
-    });
+/** 中介函數 (middleware) */
+// 設定 express app 的靜態資料夾為 `./public/`
+app.use(express.static('public'));
+// 將 API request 夾帶的 JSON 資料"解析"成 Javascript 的物件 (object) 形式
+app.use(express.json());
+// 將 API request 夾帶的 `cookie` 中的 `cookie header` 資料"解析"成 Javascript 的物件 (object) 形式。同時會產生 req.cookies 的屬性值，並綁定到 `request` 物件上
+app.use(cookieParser());
+
+// 指定 view engine 為 `ejs` 模板引擎
+app.set('view engine', 'ejs');
 
 // Demo 首頁
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "pages", "index.html"));
+    res.sendFile(path.join(__dirname, "views", "index.html"));
 });
 
+// 設定路由器
 app.use("/", router);
 
 const server = app.listen(PORT, () => {
