@@ -9,12 +9,14 @@ router.get('/platform/code', controller.platform_code_get);
 // Line Pay
 router.get('/line_pay', controller.line_pay_get);
 router.get('/line_pay/login', controller.line_pay_login_get);
+router.post('/line_pay/login', controller.line_pay_login_post);
 router.get('/line_pay/authentication', controller.line_pay_authentication_get);
 router.get('/line_pay/transfer', controller.line_pay_transfer_get);
 
 // JKO Pay
 router.get('/jko_pay', controller.jko_pay_get);
 router.get('/jko_pay/login', controller.jko_pay_login_get);
+router.post('/jko_pay/login', controller.jko_pay_login_post);
 router.get('/jko_pay/authentication', controller.jko_pay_authentication_get);
 router.get('/jko_pay/transfer', controller.jko_pay_transfer_get);
 

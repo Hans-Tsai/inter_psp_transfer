@@ -40,6 +40,7 @@ module.exports.seed = async function (knex) {
             table.increments("id").primary();
             table.string("account").notNullable().unique().checkLength("=", 10);
             table.string("password").notNullable().defaultTo("000000");
+            table.string("name").notNullable().defaultTo("新用戶");
             table.integer("balance").notNullable().defaultTo(0);
             table.boolean("authenticated").defaultTo(false);
             // 其他欄位定義
@@ -58,6 +59,7 @@ module.exports.seed = async function (knex) {
             table.increments("id").primary();
             table.string("account").notNullable().unique().checkLength("=", 9);
             table.string("password").notNullable().defaultTo("000000");
+            table.string("name").notNullable().defaultTo("新用戶");
             table.integer("balance").notNullable().defaultTo(0);
             table.boolean("authenticated").defaultTo(false);
             // 其他欄位定義;
