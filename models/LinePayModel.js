@@ -28,6 +28,10 @@ class LinePayModel {
         }
         throw new Error("Incorrect email");
     }
+
+    async getUserInfo(account) {
+        return this.knex("line_pay").where({ account }).first();
+    }
 }
 
 module.exports = new LinePayModel(knex);

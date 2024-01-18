@@ -79,12 +79,12 @@ const line_pay_register_post = async (req, res) => {
     const { account, password, username } = req.body;
     const institutionCode = req.query["institution_code"];
     try {
-        const user = await LinePayModel.createUser({
+        await LinePayModel.createUser({
             account,
             password,
             username,
         });
-        console.dir(user, { depth: 10 });
+        const user = await LinePayModel.getUserInfo(account);
         // 產生一個帶有簽章(signature)的 JWT token
         const jwtToken = createToken(account, institutionCode);
         // 將這個 JWT token 儲存到 response 物件的 cookie 中
@@ -93,10 +93,10 @@ const line_pay_register_post = async (req, res) => {
             httpOnly: true,
             maxAge: maxValidDuration * 1000, // 以毫秒為單位
         });
-        res.status(200).json({ data: user });
+        res.status(200).json(user);
     } catch (err) {
         const errors = handleErrors(err);
-        res.status(400).json({ errors });
+        res.status(400).json(errors);
     }
 };
 
@@ -124,10 +124,10 @@ const line_pay_login_post = async (req, res) => {
             httpOnly: true,
             maxAge: maxValidDuration * 1000, // 以毫秒為單位
         });
-        res.status(200).json({ data });
+        res.status(200).json(data);
     } catch (error) {
         const errors = handleErrors(error);
-        res.status(400).json({ errors });
+        res.status(400).json(errors);
     }
 };
 
@@ -160,12 +160,12 @@ const jko_pay_login_post = (req, res) => {
         .then((data) => {
             // console.log(data);
             if (account === data[0].account && password === data[0].password) {
-                res.status(200).json({ data });
+                res.status(200).json(data);
             }
         })
         .catch((err) => {
             const errors = handleErrors(err);
-            res.status(400).json({ errors });
+            res.status(400).json(errors);
         });
 };
 

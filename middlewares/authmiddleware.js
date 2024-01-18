@@ -49,7 +49,7 @@ const checkUser = async (req, res, next) => {
                 } else {
                     // console.log(decodedToken);
                     // rows 是一個包含查詢結果的陣列
-                    const institutionCode = req.query["institution_code"];
+                    const institutionCode = decodedToken["institution_code"];
                     let rows = await knex("platform")
                         .select("table")
                         .where("institution_code", institutionCode);
