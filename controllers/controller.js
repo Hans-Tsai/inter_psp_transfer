@@ -57,7 +57,9 @@ const platform_code_get = (req, res) => {
             res.render("platform/code", { data });
         })
         .catch((err) => {
-            console.error("Error:", err);
+            // console.error("Error:", err);
+            const error = handleErrors(err);
+            res.status(400).json(error);
         });
 };
 
@@ -176,8 +178,50 @@ const line_pay_authentication_get = (req, res) => {
 };
 
 const line_pay_transfer_get = (req, res) => {
-    res.render("line_pay/transfer");
+    knex.select("account", "name")
+        .from("line_pay")
+        .orderBy("account", "asc")
+        .then((data) => {
+            res.render("line_pay/transfer", { data });
+        })
+        .catch((err) => {
+            // console.error("Error:", err);
+            const error = handleErrors(err);
+            res.status(400).json(error);
+        });
 };
+
+const line_pay_transfer_post = async (req, res) => {
+    const { account, balance, recipientAccount, amount, note } = req.body;
+    try {
+        if (Number(amount) <= 0) throw new Error("轉帳金額必須大於 0");
+        if (!Number.isInteger(Number(amount))) throw new Error("轉帳金額必須是整數");
+        if (Number(amount) > Number(balance)) throw new Error("餘額不足");
+        if (Number(account) === Number(recipientAccount)) throw new Error("不能轉帳給自己");
+        const recipientInfo = await LinePayModel.getUserInfo(recipientAccount);
+        const recipientBalance = recipientInfo.balance;
+
+        // 經過轉帳後，兩個用戶的餘額都會改變，因此必須使用交易(transaction)來確保兩個用戶的餘額都會改變
+        await LinePayModel.transfer({ account, recipientAccount, amount, note });
+        const user = await LinePayModel.getUserInfo(account);
+        const recipientUser = await LinePayModel.getUserInfo(recipientAccount);
+        // 提領前的餘額 － 提領金額 ＝ 提領後的餘額
+        if (Number(balance) - Number(amount) != user.balance) throw new Error("轉帳失敗");
+        // 提領前的餘額 ＋ 提領金額 ＝ 提領後的餘額
+        if (Number(recipientBalance) + Number(amount) != recipientUser.balance) throw new Error("轉帳失敗");
+
+        res.status(200).json(user);
+    } catch (err) {
+        const error = handleErrors(err);
+        res.status(400).json(error);
+    }
+};
+
+const line_pay_inter_agency_transfer_get = (req, res) => {
+    res.render("line_pay/inter_agency_transfer");
+};
+
+const line_pay_inter_agency_transfer_post = (req, res) => {};
 
 //#endregion
 
@@ -234,6 +278,9 @@ module.exports = {
     line_pay_withdraw_post,
     line_pay_authentication_get,
     line_pay_transfer_get,
+    line_pay_transfer_post,
+    line_pay_inter_agency_transfer_get,
+    line_pay_inter_agency_transfer_post,
     jko_pay_get,
     jko_pay_login_get,
     jko_pay_login_post,

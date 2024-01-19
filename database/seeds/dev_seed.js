@@ -8,6 +8,7 @@ module.exports.seed = async function (knex) {
     await knex.schema.dropTableIfExists("line_pay");
     await knex.schema.dropTableIfExists("jko_pay");
     await knex.schema.dropTableIfExists("platform");
+    await knex.schema.dropTableIfExists("transfer");
 
     // 檢查資料表是否存在
     const platform_exists = await knex.schema.hasTable("platform");
@@ -45,17 +46,8 @@ module.exports.seed = async function (knex) {
     if (!line_pay_exists) {
         // 建立資料表
         await knex.schema.createTable("line_pay", (table) => {
-            table
-                .integer("institution_code")
-                .references("platform.institution_code")
-                .notNullable()
-                .defaultTo(391);
-            table
-                .string("account")
-                .primary()
-                .notNullable()
-                .unique()
-                .checkLength("=", 10);
+            table.integer("institution_code").references("platform.institution_code").notNullable().defaultTo(391);
+            table.string("account").primary().notNullable().unique().checkLength("=", 10);
             table.string("password").notNullable().defaultTo("000000");
             table.string("name").notNullable().defaultTo("新用戶");
             table.integer("balance").notNullable().defaultTo(0);
@@ -63,7 +55,7 @@ module.exports.seed = async function (knex) {
             // 其他欄位定義
         });
         // 填充資料表的範例數據
-        await LinePayModel.createUser({ account: "1234567891", password: "000000", username: "admin"});
+        await LinePayModel.createUser({ account: "1234567891", password: "000000", username: "admin" });
     }
 
     // 檢查資料表是否存在
@@ -71,17 +63,8 @@ module.exports.seed = async function (knex) {
     if (!jko_pay_exists) {
         // 建立資料表
         await knex.schema.createTable("jko_pay", (table) => {
-            table
-                .integer("institution_code")
-                .references("platform.institution_code")
-                .notNullable()
-                .defaultTo(396);
-            table
-                .string("account")
-                .primary()
-                .notNullable()
-                .unique()
-                .checkLength("=", 9);
+            table.integer("institution_code").references("platform.institution_code").notNullable().defaultTo(396);
+            table.string("account").primary().notNullable().unique().checkLength("=", 9);
             table.string("password").notNullable().defaultTo("000000");
             table.string("name").notNullable().defaultTo("新用戶");
             table.integer("balance").notNullable().defaultTo(0);
@@ -90,5 +73,21 @@ module.exports.seed = async function (knex) {
         });
         // 填充資料表的範例數據
         // await JKOPayModel.createUser({ account: "987654321", password: "000000", username: "admin"});
+    }
+
+    // 檢查資料表是否存在
+    const transfer_exists = await knex.schema.hasTable("transfer");
+    if (!transfer_exists) {
+        // 建立資料表
+        await knex.schema.createTable("transfer", (table) => {
+            table.increments("id").primary();
+            table.integer("institution_code").references("platform.institution_code").notNullable();
+            table.string("account").notNullable();
+            table.integer("recipient_institution_code").references("platform.institution_code").notNullable();
+            table.string("recipient_account").notNullable();
+            table.integer("amount").notNullable();
+            table.string("note").notNullable().defaultTo("無");
+            table.timestamp("created_at").defaultTo(knex.fn.now());
+        });
     }
 };

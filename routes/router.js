@@ -20,6 +20,9 @@ router.get('/line_pay/withdraw', requireAuth, checkUser, controller.line_pay_wit
 router.post('/line_pay/withdraw', requireAuth, checkUser, controller.line_pay_withdraw_post);
 router.get('/line_pay/authentication', requireAuth, checkUser, controller.line_pay_authentication_get);
 router.get('/line_pay/transfer', requireAuth, checkUser, controller.line_pay_transfer_get);
+router.post('/line_pay/transfer', requireAuth, checkUser, controller.line_pay_transfer_post);
+router.get('/line_pay/inter_agency_transfer', requireAuth, checkUser, controller.line_pay_inter_agency_transfer_get);
+router.post('/line_pay/inter_agency_transfer', requireAuth, checkUser, controller.line_pay_inter_agency_transfer_post);
 
 // JKO Pay
 router.get('/jko_pay', requireAuth, checkUser, controller.jko_pay_get);

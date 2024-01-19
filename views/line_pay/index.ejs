@@ -47,23 +47,40 @@
 
         <div class="container">
             <h2 class="my-4">Line Pay</h2>
-            <div class="form-group">
-                <label for="username">使用者名稱:</label>
-                <p><%= userInfo.name %></p>
+            <div class="container">
+                <div class="row">
+                    <div class="col-sm">
+                        <div class="card text-white bg-primary mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">使用者名稱</h5>
+                                <p class="card-text display-4" id="username"><%= userInfo.name %></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm">
+                        <div class="card text-white bg-success mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">帳號</h5>
+                                <p class="card-text display-4" id="account"><%= userInfo.account %></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm">
+                        <div class="card text-white bg-info mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">餘額</h5>
+                                <p class="card-text display-4" id="balance"><%= userInfo.balance %></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="account">帳號:</label>
-                <p><%= userInfo.account %></p>
-            </div>
-            <div class="form-group">
-                <label for="balance">餘額:</label>
-                <p><%= userInfo.balance %></p>
-            </div>
+
             <div style="display: flex; justify-content: space-between">
                 <button type="button" class="btn btn-outline-primary" data-bs-toggle="tooltip" data-bs-placement="bottom" title="會增加餘額" onclick="location.href='/line_pay/deposit'">儲值</button>
                 <button type="button" class="btn btn-outline-secondary data-bs-toggle="tooltip" data-bs-placement="bottom" title="會減少餘額" onclick="location.href='/line_pay/withdraw'">提領</button>
-                <button type="button" class="btn btn-outline-success">轉帳</button>
-                <button type="button" class="btn btn-outline-info">跨機構轉帳</button>
+                <button type="button" class="btn btn-outline-success" data-bs-toggle="tooltip" data-bs-placement="bottom" title="僅限同機構的用戶之間轉帳" onclick="location.href='/line_pay/transfer'">轉帳</button>
+                <button type="button" class="btn btn-outline-info" data-bs-toggle="tooltip" data-bs-placement="bottom" title="可跨機構的用戶之間轉帳" onclick="location.href='/line_pay/inter_agency_transfer'">跨機構轉帳</button>
             </div>
         </div>
     </body>

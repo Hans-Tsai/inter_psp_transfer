@@ -41,6 +41,33 @@ class LinePayModel {
     async withdraw({ account, amount }) {
         return this.knex("line_pay").where({ account }).decrement("balance", amount);
     }
+
+    // 僅限同機構的用戶之間轉帳
+    async transfer({ account, recipientAccount, amount, note }) {
+        // 在 MySQL 中，預設的隔離級別是 REPEATABLE READ
+        const isolationLevel = 'repeatable read';
+        const trx = await knex.transaction({ isolationLevel });
+
+        try {
+            await trx("line_pay").where({ account }).decrement("balance", amount);
+            await trx("line_pay").where({ account: recipientAccount }).increment("balance", amount);
+            await trx("transfer").insert({
+                institution_code: 391,
+                account,
+                recipient_institution_code: 391,
+                recipient_account: recipientAccount,
+                amount,
+                note,
+            });
+
+            await trx.commit();
+        } catch (error) {
+            if (!trx.isCompleted()) {
+                await trx.rollback();
+            }
+            throw new Error(error.message);
+        }
+    };
 }
 
 module.exports = new LinePayModel(knex);
