@@ -33,7 +33,8 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="/">首頁</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Line Pay</li>
+                <li class="breadcrumb-item"><a href="/line_pay">Line Pay</a></li>
+                <li class="breadcrumb-item active" aria-current="page">儲值</li>
             </ol>
         </nav>
         <button
@@ -49,22 +50,45 @@
             <h2 class="my-4">Line Pay</h2>
             <div class="form-group">
                 <label for="username">使用者名稱:</label>
-                <p><%= userInfo.name %></p>
+                <p id="username"><%= userInfo.name %></p>
             </div>
             <div class="form-group">
                 <label for="account">帳號:</label>
-                <p><%= userInfo.account %></p>
+                <p id="account"><%= userInfo.account %></p>
             </div>
             <div class="form-group">
                 <label for="balance">餘額:</label>
-                <p><%= userInfo.balance %></p>
+                <p id="balance"><%= userInfo.balance %></p>
             </div>
-            <div style="display: flex; justify-content: space-between">
-                <button type="button" class="btn btn-outline-primary" data-bs-toggle="tooltip" data-bs-placement="bottom" title="會增加餘額" onclick="location.href='/line_pay/deposit'">儲值</button>
-                <button type="button" class="btn btn-outline-secondary data-bs-toggle="tooltip" data-bs-placement="bottom" title="會減少餘額" onclick="location.href='/line_pay/withdraw'">提領</button>
-                <button type="button" class="btn btn-outline-success">轉帳</button>
-                <button type="button" class="btn btn-outline-info">跨機構轉帳</button>
+            <div class="form-group">
+                <label for="amount">儲值金額:</label>
+                <input type="number" class="form-control" id="amount" placeholder="請輸入儲值金額" min="0" value="0" />
             </div>
+            <button type="button" class="btn btn-outline-primary" onclick="deposit()">確定</button>
         </div>
     </body>
+    <script>
+        async function deposit() {
+            const account = document.getElementById("account").textContent;
+            const balance = document.getElementById("balance").textContent;
+            const amount = document.getElementById("amount").value;
+
+            try {
+                const response = await fetch("/line_pay/deposit", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ account, balance, amount }),
+                });
+                const res = await response.json();
+                if (response.status !== 200) throw new Error(res.message);
+                window.alert("儲值成功");
+                location.assign("/line_pay");
+            } catch (error) {
+                window.alert(error.message);
+                location.assign("/line_pay");
+            }
+        }
+    </script>
 </html>

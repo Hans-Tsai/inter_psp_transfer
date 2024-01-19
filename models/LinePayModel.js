@@ -33,6 +33,14 @@ class LinePayModel {
     async getUserInfo(account) {
         return this.knex("line_pay").where({ account }).first();
     }
+
+    async deposit({ account, amount }) {
+        return this.knex("line_pay").where({ account }).increment("balance", amount);
+    }
+
+    async withdraw({ account, amount }) {
+        return this.knex("line_pay").where({ account }).decrement("balance", amount);
+    }
 }
 
 module.exports = new LinePayModel(knex);

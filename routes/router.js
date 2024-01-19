@@ -14,6 +14,10 @@ router.post('/line_pay/register', controller.line_pay_register_post);
 router.get('/line_pay/login', controller.line_pay_login_get);
 router.post('/line_pay/login', controller.line_pay_login_post);
 router.get('/line_pay/logout', controller.line_pay_logout_get);
+router.get('/line_pay/deposit', requireAuth, checkUser, controller.line_pay_deposit_get);
+router.post('/line_pay/deposit', requireAuth, checkUser, controller.line_pay_deposit_post);
+router.get('/line_pay/withdraw', requireAuth, checkUser, controller.line_pay_withdraw_get);
+router.post('/line_pay/withdraw', requireAuth, checkUser, controller.line_pay_withdraw_post);
 router.get('/line_pay/authentication', requireAuth, checkUser, controller.line_pay_authentication_get);
 router.get('/line_pay/transfer', requireAuth, checkUser, controller.line_pay_transfer_get);
 

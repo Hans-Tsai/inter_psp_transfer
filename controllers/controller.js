@@ -4,32 +4,30 @@ const jwt = require("jsonwebtoken");
 const LinePayModel = require("../models/LinePayModel");
 
 //#region 工具函式
-// TODO: 建立一個用來專門產生錯誤事件的物件(=> errors object)的錯誤事件處理函數
+// TODO: 建立一個用來專門產生錯誤事件的物件(=> error object)的錯誤事件處理函數
 const handleErrors = (err) => {
     // err.message: 錯誤事件的訊息，err.code: 錯誤事件的編號
-    let errors = { account: "", password: "" };
+    let error = { account: "", password: "", message: err.message };
 
     // account 驗證錯誤
-    if (err.message === "incorrect account")
-        errors.account = "That account isn't registered.";
+    if (err.message === "incorrect account") error.account = "That account isn't registered.";
     // password 驗證錯誤
-    if (err.message === "incorrect password")
-        errors.password = "That password is incorrect";
+    if (err.message === "incorrect password") error.password = "That password is incorrect";
 
     // TODO: MySQL: duplicate key error
     // if (err.code === 11000) {
-    //   errors['account'] = 'that account is already registered';
-    //   return errors;
+    //   error['account'] = 'that account is already registered';
+    //   return error;
     // }
 
     // TODO: validation error
     // if (err.message.includes('user validation failed')) {
-    //   Object.values(err.errors).forEach(properties => {
-    //     errors[properties.path] = properties.message;
+    //   Object.values(err.error).forEach(properties => {
+    //     error[properties.path] = properties.message;
     //   })
     // }
 
-    return errors;
+    return error;
 };
 
 /** 建立一個用來產生 JWT token 的函數
@@ -95,19 +93,13 @@ const line_pay_register_post = async (req, res) => {
         });
         res.status(200).json(user);
     } catch (err) {
-        const errors = handleErrors(err);
-        res.status(400).json(errors);
+        const error = handleErrors(err);
+        res.status(400).json(error);
     }
 };
 
 const line_pay_login_get = (req, res) => {
     res.render("line_pay/login");
-};
-
-const line_pay_logout_get = (req, res) => {
-    // 將要回傳給客戶端的 response 物件中的 `cookie` 設定為空值
-    res.cookie("jwt", "", { maxAge: 1 });
-    res.redirect("/");
 };
 
 const line_pay_login_post = async (req, res) => {
@@ -125,9 +117,57 @@ const line_pay_login_post = async (req, res) => {
             maxAge: maxValidDuration * 1000, // 以毫秒為單位
         });
         res.status(200).json(data);
-    } catch (error) {
-        const errors = handleErrors(error);
-        res.status(400).json(errors);
+    } catch (err) {
+        const error = handleErrors(err);
+        res.status(400).json(error);
+    }
+};
+
+const line_pay_logout_get = (req, res) => {
+    // 將要回傳給客戶端的 response 物件中的 `cookie` 設定為空值
+    res.cookie("jwt", "", { maxAge: 1 });
+    res.redirect("/");
+};
+
+const line_pay_deposit_get = (req, res) => {
+    res.render("line_pay/deposit");
+};
+
+const line_pay_deposit_post = async (req, res) => {
+    const { account, balance, amount } = req.body;
+    try {
+        if (Number(amount) <= 0) throw new Error("儲值金額必須大於 0");
+        if (!Number.isInteger(Number(amount))) throw new Error("儲值金額必須是整數");
+        await LinePayModel.deposit({ account, amount });
+        const user = await LinePayModel.getUserInfo(account);
+        // 儲值前的餘額 ＋ 儲值金額 ＝ 儲值後的餘額
+        if (Number(balance) + Number(amount) != user.balance) throw new Error("儲值失敗");
+
+        res.status(200).json(user);
+    } catch (err) {
+        const error = handleErrors(err);
+        res.status(400).json(error);
+    }
+};
+
+const line_pay_withdraw_get = (req, res) => {
+    res.render("line_pay/withdraw");
+};
+const line_pay_withdraw_post = async (req, res) => {
+    const { account, balance, amount } = req.body;
+    try {
+        if (Number(amount) <= 0) throw new Error("提領金額必須大於 0");
+        if (!Number.isInteger(Number(amount))) throw new Error("儲值金額必須是整數");
+        if (Number(amount) > Number(balance)) throw new Error("餘額不足");
+        await LinePayModel.withdraw({ account, amount });
+        const user = await LinePayModel.getUserInfo(account);
+        // 提領前的餘額 － 提領金額 ＝ 提領後的餘額
+        if (Number(balance) - Number(amount) != user.balance) throw new Error("提領失敗");
+
+        res.status(200).json(user);
+    } catch (err) {
+        const error = handleErrors(err);
+        res.status(400).json(error);
     }
 };
 
@@ -164,8 +204,8 @@ const jko_pay_login_post = (req, res) => {
             }
         })
         .catch((err) => {
-            const errors = handleErrors(err);
-            res.status(400).json(errors);
+            const error = handleErrors(err);
+            res.status(400).json(error);
         });
 };
 
@@ -188,6 +228,10 @@ module.exports = {
     line_pay_login_get,
     line_pay_login_post,
     line_pay_logout_get,
+    line_pay_deposit_get,
+    line_pay_deposit_post,
+    line_pay_withdraw_get,
+    line_pay_withdraw_post,
     line_pay_authentication_get,
     line_pay_transfer_get,
     jko_pay_get,
