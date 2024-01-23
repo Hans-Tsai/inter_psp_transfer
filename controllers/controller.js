@@ -195,19 +195,11 @@ const line_pay_transfer_post = async (req, res) => {
         if (!Number.isInteger(Number(amount))) throw new Error("轉帳金額必須是整數");
         if (Number(amount) > Number(balance)) throw new Error("餘額不足");
         if (Number(account) === Number(recipientAccount)) throw new Error("不能轉帳給自己");
-        const recipientInfo = await LinePayModel.getUserInfo(recipientAccount);
-        const recipientBalance = recipientInfo.balance;
 
         // 經過轉帳後，兩個用戶的餘額都會改變，因此必須使用交易(transaction)來確保兩個用戶的餘額都會改變
         await LinePayModel.transfer({ account, recipientAccount, amount, note });
-        const user = await LinePayModel.getUserInfo(account);
-        const recipientUser = await LinePayModel.getUserInfo(recipientAccount);
-        // 轉帳前的餘額 － 轉帳金額 ＝ 轉帳後的餘額
-        if (Number(balance) - Number(amount) != user.balance) throw new Error("轉帳失敗");
-        // 轉帳前的餘額 ＋ 轉帳金額 ＝ 轉帳後的餘額
-        if (Number(recipientBalance) + Number(amount) != recipientUser.balance) throw new Error("轉帳失敗");
 
-        res.status(200).json(user);
+        res.sendStatus(200);
     } catch (err) {
         const error = handleErrors(err);
         res.status(400).json(error);
@@ -235,25 +227,11 @@ const line_pay_inter_agency_transfer_post = async (req, res) => {
         if (Number(amount) > Number(balance)) throw new Error("餘額不足");
         if (Number(recipientInstitutionCode) === 391 && Number(account) === Number(recipientAccount))
             throw new Error("不能轉帳給自己");
-        const recipientInfo = await PlatformModel.getUserInfo({
-            institutionCode: recipientInstitutionCode,
-            account: recipientAccount,
-        });
-        const recipientBalance = recipientInfo.balance;
 
         // 經過轉帳後，兩個用戶的餘額都會改變，因此必須使用交易(transaction)來確保兩個用戶的餘額都會改變
         await LinePayModel.interAgencyTransfer({ account, recipientInstitutionCode, recipientAccount, amount, note });
-        const user = await LinePayModel.getUserInfo(account);
-        const recipientUser = await PlatformModel.getUserInfo({
-            institutionCode: recipientInstitutionCode,
-            account: recipientAccount,
-        });
-        // 跨機構轉帳前的餘額 － 跨機構轉帳金額 ＝ 跨機構轉帳後的餘額
-        if (Number(balance) - Number(amount) != user.balance) throw new Error("跨機構轉帳失敗");
-        // 跨機構轉帳前的餘額 ＋ 跨機構轉帳金額 ＝ 跨機構轉帳後的餘額
-        if (Number(recipientBalance) + Number(amount) != recipientUser.balance) throw new Error("跨機構轉帳失敗");
 
-        res.status(200).json(user);
+        res.sendStatus(200);
     } catch (err) {
         const error = handleErrors(err);
         res.status(400).json(error);

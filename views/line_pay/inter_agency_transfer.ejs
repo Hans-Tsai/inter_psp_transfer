@@ -129,8 +129,8 @@
                     },
                     body: JSON.stringify(data),
                 });
-                const res = await response.json();
-                if (response.status !== 200) throw new Error(res.message);
+                
+                if (!response.ok) throw new Error('HTTP status ' + response.status);
                 window.alert("跨機構轉帳成功");
                 location.assign("/line_pay");
             } catch (err) {
