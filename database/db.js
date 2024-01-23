@@ -7,7 +7,7 @@ const knex = require("knex")(knexConfig);
 const databaseName = "fido_uaf";
 knex.raw(`CREATE DATABASE IF NOT EXISTS ??`, [databaseName])
     .then(() => {
-        console.log(`Database ${databaseName} is created`);
+        // console.log(`Database ${databaseName} is created`);
     })
     .catch((err) => {
         console.error("Error creating database:", err);

@@ -5,7 +5,7 @@ const knex = require("knex")(knexConfig);
 const bcrypt = require("bcrypt");
 const PlatformModel = require("./PlatformModel");
 
-class LinePayModel {
+class JkoPayModel {
     constructor(knex) {
         this.knex = knex;
     }
@@ -13,7 +13,7 @@ class LinePayModel {
     async createUser({ account, password, username }) {
         const salt = await bcrypt.genSalt();
         const hashedPassword = await bcrypt.hash(password, salt);
-        return this.knex("line_pay").insert({
+        return this.knex("jko_pay").insert({
             account,
             password: hashedPassword,
             name: username,
@@ -21,7 +21,7 @@ class LinePayModel {
     }
 
     async login({ account, password }) {
-        const user = await this.knex("line_pay").where({ account }).first();
+        const user = await this.knex("jko_pay").where({ account }).first();
         if (!user) throw new Error("Incorrect account");
         if (user.name === "admin") return user;
 
@@ -32,15 +32,15 @@ class LinePayModel {
     }
 
     async getUserInfo(account) {
-        return this.knex("line_pay").where({ account }).first();
+        return this.knex("jko_pay").where({ account }).first();
     }
 
     async deposit({ account, amount }) {
-        return this.knex("line_pay").where({ account }).increment("balance", amount);
+        return this.knex("jko_pay").where({ account }).increment("balance", amount);
     }
 
     async withdraw({ account, amount }) {
-        return this.knex("line_pay").where({ account }).decrement("balance", amount);
+        return this.knex("jko_pay").where({ account }).decrement("balance", amount);
     }
 
     // 僅限同機構的用戶之間轉帳
@@ -50,12 +50,12 @@ class LinePayModel {
         const trx = await knex.transaction({ isolationLevel });
 
         try {
-            await trx("line_pay").where({ account }).decrement("balance", amount);
-            await trx("line_pay").where({ account: recipientAccount }).increment("balance", amount);
+            await trx("jko_pay").where({ account }).decrement("balance", amount);
+            await trx("jko_pay").where({ account: recipientAccount }).increment("balance", amount);
             await trx("transfer").insert({
-                institution_code: 391,
+                institution_code: 396,
                 account,
-                recipient_institution_code: 391,
+                recipient_institution_code: 396,
                 recipient_account: recipientAccount,
                 amount,
                 note,
@@ -74,13 +74,13 @@ class LinePayModel {
         // 在 MySQL 中，預設的隔離級別是 REPEATABLE READ
         const isolationLevel = "repeatable read";
         const trx = await knex.transaction({ isolationLevel });
-        
+        const recipientInstitutionTable = this.knex("platform").select("table").where({ institution_code: recipientInstitutionCode });
+
         try {
-            const recipientInstitution = await this.knex("platform").select("table").where({ institution_code: recipientInstitutionCode }).first();
-            await trx("line_pay").where({ account }).decrement("balance", amount);
-            await trx(recipientInstitution.table).where({ account: recipientAccount }).increment("balance", amount);
+            await trx("jko_pay").where({ account }).decrement("balance", amount);
+            await trx(recipientInstitutionTable).where({ account: recipientAccount }).increment("balance", amount);
             await trx("transfer").insert({
-                institution_code: 391,
+                institution_code: 396,
                 account,
                 recipient_institution_code: recipientInstitutionCode,
                 recipient_account: recipientAccount,
@@ -98,4 +98,4 @@ class LinePayModel {
     }
 }
 
-module.exports = new LinePayModel(knex);
+module.exports = new JkoPayModel(knex);

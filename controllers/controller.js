@@ -1,7 +1,9 @@
 const path = require("path");
 const knex = require("../database/db");
 const jwt = require("jsonwebtoken");
+const PlatformModel = require("../models/PlatformModel");
 const LinePayModel = require("../models/LinePayModel");
+const JkoPayModel = require("../models/JkoPayModel");
 
 //#region 工具函式
 // TODO: 建立一個用來專門產生錯誤事件的物件(=> error object)的錯誤事件處理函數
@@ -49,18 +51,14 @@ const platform_get = (req, res) => {
     res.render("platform/index");
 };
 
-const platform_code_get = (req, res) => {
-    knex.select("*")
-        .from("platform")
-        .orderBy("institution_code", "asc")
-        .then((data) => {
-            res.render("platform/code", { data });
-        })
-        .catch((err) => {
-            // console.error("Error:", err);
-            const error = handleErrors(err);
-            res.status(400).json(error);
-        });
+const platform_code_get = async (req, res) => {
+    try {
+        const data = await PlatformModel.getPlatformInfo();
+        res.render("platform/code", { data });
+    } catch (err) {
+        const error = handleErrors(err);
+        res.status(400).json(error);
+    }
 };
 
 //#endregion
@@ -185,7 +183,6 @@ const line_pay_transfer_get = (req, res) => {
             res.render("line_pay/transfer", { data });
         })
         .catch((err) => {
-            // console.error("Error:", err);
             const error = handleErrors(err);
             res.status(400).json(error);
         });
@@ -205,9 +202,9 @@ const line_pay_transfer_post = async (req, res) => {
         await LinePayModel.transfer({ account, recipientAccount, amount, note });
         const user = await LinePayModel.getUserInfo(account);
         const recipientUser = await LinePayModel.getUserInfo(recipientAccount);
-        // 提領前的餘額 － 提領金額 ＝ 提領後的餘額
+        // 轉帳前的餘額 － 轉帳金額 ＝ 轉帳後的餘額
         if (Number(balance) - Number(amount) != user.balance) throw new Error("轉帳失敗");
-        // 提領前的餘額 ＋ 提領金額 ＝ 提領後的餘額
+        // 轉帳前的餘額 ＋ 轉帳金額 ＝ 轉帳後的餘額
         if (Number(recipientBalance) + Number(amount) != recipientUser.balance) throw new Error("轉帳失敗");
 
         res.status(200).json(user);
@@ -218,10 +215,50 @@ const line_pay_transfer_post = async (req, res) => {
 };
 
 const line_pay_inter_agency_transfer_get = (req, res) => {
-    res.render("line_pay/inter_agency_transfer");
+    knex.select("institution_code", "institution_name", "table")
+        .from("platform")
+        .orderBy("institution_code", "asc")
+        .then((data) => {
+            res.render("line_pay/inter_agency_transfer", { data });
+        })
+        .catch((err) => {
+            const error = handleErrors(err);
+            res.status(400).json(error);
+        });
 };
 
-const line_pay_inter_agency_transfer_post = (req, res) => {};
+const line_pay_inter_agency_transfer_post = async (req, res) => {
+    const { account, balance, recipientInstitutionCode, recipientAccount, amount, note } = req.body;
+    try {
+        if (Number(amount) <= 0) throw new Error("轉帳金額必須大於 0");
+        if (!Number.isInteger(Number(amount))) throw new Error("轉帳金額必須是整數");
+        if (Number(amount) > Number(balance)) throw new Error("餘額不足");
+        if (Number(recipientInstitutionCode) === 391 && Number(account) === Number(recipientAccount))
+            throw new Error("不能轉帳給自己");
+        const recipientInfo = await PlatformModel.getUserInfo({
+            institutionCode: recipientInstitutionCode,
+            account: recipientAccount,
+        });
+        const recipientBalance = recipientInfo.balance;
+
+        // 經過轉帳後，兩個用戶的餘額都會改變，因此必須使用交易(transaction)來確保兩個用戶的餘額都會改變
+        await LinePayModel.interAgencyTransfer({ account, recipientInstitutionCode, recipientAccount, amount, note });
+        const user = await LinePayModel.getUserInfo(account);
+        const recipientUser = await PlatformModel.getUserInfo({
+            institutionCode: recipientInstitutionCode,
+            account: recipientAccount,
+        });
+        // 跨機構轉帳前的餘額 － 跨機構轉帳金額 ＝ 跨機構轉帳後的餘額
+        if (Number(balance) - Number(amount) != user.balance) throw new Error("跨機構轉帳失敗");
+        // 跨機構轉帳前的餘額 ＋ 跨機構轉帳金額 ＝ 跨機構轉帳後的餘額
+        if (Number(recipientBalance) + Number(amount) != recipientUser.balance) throw new Error("跨機構轉帳失敗");
+
+        res.status(200).json(user);
+    } catch (err) {
+        const error = handleErrors(err);
+        res.status(400).json(error);
+    }
+};
 
 //#endregion
 

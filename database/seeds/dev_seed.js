@@ -1,4 +1,6 @@
+const PlatformModel = require("../../models/PlatformModel");
 const LinePayModel = require("../../models/LinePayModel");
+const JkoPayModel = require("../../models/JkoPayModel");
 
 /**
  * @param { import("knex").Knex } knex
@@ -20,7 +22,7 @@ module.exports.seed = async function (knex) {
             table.string("table").notNullable().defaultTo("table_name");
             // 其他欄位定義
         });
-        // 填充資料表的示例數據
+        // 填充資料表的範例數據
         await knex("platform").insert([
             { institution_code: 390, institution_name: "悠遊卡公司", table: "easy_wallet" },
             {
@@ -72,7 +74,7 @@ module.exports.seed = async function (knex) {
             // 其他欄位定義;
         });
         // 填充資料表的範例數據
-        // await JKOPayModel.createUser({ account: "987654321", password: "000000", username: "admin"});
+        await JkoPayModel.createUser({ account: "987654321", password: "000000", username: "admin"});
     }
 
     // 檢查資料表是否存在
