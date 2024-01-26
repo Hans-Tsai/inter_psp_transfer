@@ -1,6 +1,6 @@
-const NODE_ENV = process.env.NODE_ENV || "development";
+const config = require("../config");
 // 連線到 MySQL 資料庫
-const knexConfig = require("../knexfile")[NODE_ENV];
+const knexConfig = require("../knexfile")[config.env];
 const knex = require("knex")(knexConfig);
 
 // 初始化資料庫

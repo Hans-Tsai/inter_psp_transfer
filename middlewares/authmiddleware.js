@@ -1,3 +1,4 @@
+const config = require("../config");
 const knex = require("../database/db");
 const jwt = require("jsonwebtoken");
 const util = require("util");
@@ -23,7 +24,7 @@ const requireAuth = async (req, res, next) => {
     if (jwtToken) {
         // 若客戶端存在 `JWT token`
         try {
-            decodedToken = await verify(jwtToken, process.env.JWT_SECRET);
+            decodedToken = await verify(jwtToken, config.server.jwt_secret);
             // console.log(decodedToken);
             institutionCode = decodedToken["institution_code"];
             // rows 是一個包含查詢結果的陣列
@@ -49,7 +50,7 @@ const checkUser = async (req, res, next) => {
     const jwtToken = req.cookies.jwt;
     if (jwtToken) {
         try {
-            const decodedToken = await verify(jwtToken, process.env.JWT_SECRET);
+            const decodedToken = await verify(jwtToken, config.server.jwt_secret);
             const institutionCode = decodedToken["institution_code"];
             const rows = await knex("platform").select("table").where("institution_code", institutionCode);
             const userInfo = await knex(rows[0].table)

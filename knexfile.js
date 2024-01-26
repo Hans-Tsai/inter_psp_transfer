@@ -1,4 +1,5 @@
 // Update with your config settings.
+const config = require("./config");
 
 /**
  * @type { Object.<string, import("knex").Knex.Config> }
@@ -8,11 +9,11 @@ module.exports = {
         // 有支援 Mysql 8.0 以上的版本的強化密碼驗證功能
         client: "mysql2",
         connection: {
-            host: process.env.DB_HOST || "localhost",
-            port: 3306,
-            user: process.env.DB_USER || "root",
-            password: process.env.DB_PASSWORD || "root12345",
-            database: process.env.DB_NAME || "fido_uaf",
+            host: config.db.host,
+            port: config.db.port,
+            user: config.db.user,
+            password: config.db.password,
+            database: config.db.name,
         },
         seeds: {
             directory: "./database/seeds",

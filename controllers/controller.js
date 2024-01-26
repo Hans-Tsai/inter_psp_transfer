@@ -1,3 +1,4 @@
+const config = require("../config");
 const path = require("path");
 const knex = require("../database/db");
 const jwt = require("jsonwebtoken");
@@ -38,7 +39,7 @@ const handleErrors = (err) => {
 // JWT token 的有效期間長度，`jwt.sign()` 是以秒為單位
 const maxValidDuration = 3 * 24 * 60 * 60; // 3 days
 const createToken = (account, institution_code) => {
-    return jwt.sign({ account, institution_code }, process.env.JWT_SECRET, {
+    return jwt.sign({ account, institution_code }, config.server.jwt_secret, {
         expiresIn: maxValidDuration,
     });
 };
