@@ -11,6 +11,7 @@ module.exports.seed = async function (knex) {
     await knex.schema.dropTableIfExists("jko_pay");
     await knex.schema.dropTableIfExists("platform");
     await knex.schema.dropTableIfExists("transfer");
+    await knex.schema.dropTableIfExists("credential");
 
     // 檢查資料表是否存在
     const platform_exists = await knex.schema.hasTable("platform");
@@ -89,6 +90,19 @@ module.exports.seed = async function (knex) {
             table.string("recipient_account").notNullable();
             table.integer("amount").notNullable();
             table.string("note").notNullable().defaultTo("無");
+            table.timestamp("created_at").defaultTo(knex.fn.now());
+        });
+    }
+
+    // 檢查資料表是否存在
+    const credential_exists = await knex.schema.hasTable("credential");
+    if (!credential_exists) {
+        // 建立資料表
+        await knex.schema.createTable("credential", (table) => {
+            table.increments("id").primary();
+            table.integer("institution_code").references("platform.institution_code").notNullable();
+            table.string("account").notNullable();
+            table.json("credential").notNullable();
             table.timestamp("created_at").defaultTo(knex.fn.now());
         });
     }

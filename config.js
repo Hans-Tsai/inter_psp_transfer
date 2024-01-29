@@ -8,7 +8,7 @@ module.exports = {
     env: process.env.NODE_ENV || "development",
     // Backend Server
     server: {
-        url: process.env.SERVER_URL || "http://127.0.0.1",
+        origin: process.env.SERVER_ORIGIN || "http://127.0.0.1",
         port: process.env.PORT || 3000,
         jwt_secret: process.env.JWT_SECRET || 'fido_uaf',
     },

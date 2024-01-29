@@ -5,6 +5,8 @@ const jwt = require("jsonwebtoken");
 const PlatformModel = require("../models/PlatformModel");
 const LinePayModel = require("../models/LinePayModel");
 const JkoPayModel = require("../models/JkoPayModel");
+const CredentialModel = require("../models/CredentialModel");
+const utils = require("../modules/webauthn/utils");
 
 //#region 工具函式
 // TODO: 建立一個用來專門產生錯誤事件的物件(=> error object)的錯誤事件處理函數
@@ -69,6 +71,34 @@ const platform_code_get = async (req, res) => {
 const line_pay_get = (req, res) => {
     res.render("line_pay/index");
 };
+
+const line_pay_attestation_get = (req, res) => {
+    res.render("line_pay/fido_attestation");
+};
+
+const line_pay_attestation_options_get = (req, res) => {
+    const challenge = utils.randomChallenge();
+    res.status(200).json({ challenge });
+};
+
+const line_pay_attestation_result_post = async (req, res) => {
+    try {
+        const expected = {
+            challenge: req.body.challenge,
+            origin: config.server.origin,
+        };
+        const { server } = await import('@passwordless-id/webauthn');
+        const registrationParsed = await server.verifyRegistration(registration, expected);
+        await CredentialModel.saveCredential({ institution_code, account, credential });
+    } catch (err) {
+        const error = handleErrors(err);
+        res.status(400).json(error);
+    }
+};
+
+const line_pay_assertion_options_post = async (req, res) => {};
+
+const line_pay_assertion_result_post = async (req, res) => {};
 
 const line_pay_register_get = (req, res) => {
     res.render("line_pay/register");
@@ -283,6 +313,11 @@ module.exports = {
     platform_get,
     platform_code_get,
     line_pay_get,
+    line_pay_attestation_get,
+    line_pay_attestation_options_get,
+    line_pay_attestation_result_post,
+    line_pay_assertion_options_post,
+    line_pay_assertion_result_post,
     line_pay_register_get,
     line_pay_register_post,
     line_pay_login_get,

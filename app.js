@@ -36,7 +36,7 @@ app.use(router);
 async function startServer() {
     try {
         if (ngrok) {
-            const url = await ngrok.connect({
+            const origin = await ngrok.connect({
                 addr: config.server.port,
                 subdomain: config.ngrok.subdomain,
                 authtoken: config.ngrok.authtoken,
@@ -44,7 +44,7 @@ async function startServer() {
 
             // Start the server on the correct port.
             server = app.listen(config.server.port, () => {
-                console.log(`🚀  Server is running at ${url}`);
+                console.log(`🚀  Server is running at ${origin}`);
             });
         }
     } catch (err) {
