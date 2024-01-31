@@ -10,7 +10,7 @@ router.get('/platform/code', controller.platform_code_get);
 // Line Pay
 router.get('/line_pay', requireAuth, checkUser, controller.line_pay_get);
 router.get('/line_pay/attestation', controller.line_pay_attestation_get);
-router.get('/line_pay/attestation/options', controller.line_pay_attestation_options_get);
+router.post('/line_pay/attestation/options', controller.line_pay_attestation_options_post);
 router.post('/line_pay/attestation/result', controller.line_pay_attestation_result_post);
 router.post('/line_pay/assertion/options', controller.line_pay_assertion_options_post);
 router.post('/line_pay/assertion/result', controller.line_pay_assertion_result_post);

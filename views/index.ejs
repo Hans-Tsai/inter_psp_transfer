@@ -1,42 +1,54 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIDO UAF-跨機構轉帳 Demo</title>
-    <!-- 引入 Bootstrap CSS -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-    <style>
-        body {
-          background-color: #f8f9fa;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: flex-start;
-          height: 100vh;
-          margin: 0;
-          padding-top: 20px;
-        }
-        .btn {
-          width: 200px;
-          margin-top: 20px;
-        }
-      </style>
-</head>
-<body>
-    <div class="container mt-5">
-        <h1 class="text-center mb-4">FIDO UAF-跨機構轉帳 Demo</h1>
-        <!-- 按鈕們 -->
-        <div class="d-flex flex-column align-items-center">
-            <button class="btn btn-primary mb-2" onclick="location.href='/platform?institution_code='">電子支付<br>跨機構共用平台<br>首頁</button>
-            <button class="btn btn-secondary mb-2" onclick="location.href='/line_pay?institution_code=391'">Line Pay 首頁</button>
-            <button class="btn btn-success" onclick="location.href='/jko_pay?institution_code=396'">Jko Pay 首頁</button>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>FIDO UAF-跨機構轉帳 Demo</title>
+        <!-- 引入 Bootstrap CSS -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-wEmeIV1mKuiNpC+IOBjI7aAzPcEZeedi5yW5f2yOq55WWLwNGmvvx4Um1vskeMj0"
+            crossorigin="anonymous"
+        />
+        <style>
+            body {
+                background-color: #f8f9fa;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                height: 100vh;
+                margin: 0;
+                padding-top: 20px;
+            }
+            .btn {
+                width: 200px;
+                margin-top: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container mt-5">
+            <h1 class="text-center mb-4">FIDO UAF-跨機構轉帳 Demo</h1>
+            <!-- 按鈕們 -->
+            <div class="d-flex flex-column align-items-center">
+                <button class="btn btn-primary mb-2" onclick="location.href='/platform?institution_code='">
+                    電子支付<br />跨機構共用平台<br />首頁
+                </button>
+                <button class="btn btn-secondary mb-2" onclick="location.href='/line_pay?institution_code=391'">
+                    Line Pay 首頁
+                </button>
+                <button class="btn btn-success" onclick="location.href='/jko_pay?institution_code=396'">
+                    Jko Pay 首頁
+                </button>
+            </div>
         </div>
-    </div>
-
-    <!-- 引入 Bootstrap JavaScript 和相依的 Popper.js -->
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
-</body>
+    </body>
+    <!-- 引入 Bootstrap JS -->
+    <script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8"
+        crossorigin="anonymous"
+    ></script>
 </html>

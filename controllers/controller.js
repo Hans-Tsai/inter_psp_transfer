@@ -1,12 +1,30 @@
-const config = require("../config");
+const { config, configUpdated } = require("../config");
 const path = require("path");
-const knex = require("../database/db");
 const jwt = require("jsonwebtoken");
+const knex = require("../database/db");
+const redis = require("../database/redis/redis");
 const PlatformModel = require("../models/PlatformModel");
 const LinePayModel = require("../models/LinePayModel");
 const JkoPayModel = require("../models/JkoPayModel");
 const CredentialModel = require("../models/CredentialModel");
+const AuthenticatorModel = require("../models/AuthenticatorModel");
 const utils = require("../modules/webauthn/utils");
+const SimpleWebAuthnServer = require("@simplewebauthn/server");
+
+let rpName, rpID, origin;
+(async function () {
+    await configUpdated;
+    // console.log('配置已更新');
+    // 宣告相關參數
+    // Human-readable title for your website
+    rpName = config.rp.name;
+    // A unique identifier for your website
+    rpID = config.rp.id;
+    // The URL at which registrations and authentications should occur
+    origin = config.rp.origin;
+
+    // console.dir(config, { depth: 10 });
+})();
 
 //#region 工具函式
 // TODO: 建立一個用來專門產生錯誤事件的物件(=> error object)的錯誤事件處理函數
@@ -76,20 +94,85 @@ const line_pay_attestation_get = (req, res) => {
     res.render("line_pay/fido_attestation");
 };
 
-const line_pay_attestation_options_get = (req, res) => {
-    const challenge = utils.randomChallenge();
-    res.status(200).json({ challenge });
+const line_pay_attestation_options_post = async (req, res) => {
+    try {
+        const { username, user_verification, attestation, attachment, algorithms, discoverable_credential, hints } =
+            req.body;
+        const account = await LinePayModel.generateAccount();
+        const userAuthenticators = await AuthenticatorModel.getUserAuthenticators({
+            user_institution_code: 391,
+            account,
+        });
+        const options = await SimpleWebAuthnServer.generateRegistrationOptions({
+            rpName,
+            rpID,
+            userID: account,
+            userName: username,
+            // Don't prompt users for additional information about the authenticator
+            // (Recommended for smoother UX)
+            attestationType: attestation,
+            // Prevent users from re-registering existing authenticators
+            excludeCredentials: userAuthenticators.map((authenticator) => ({
+                id: authenticator.credentialID,
+                type: "public-key",
+                // Optional
+                transports: authenticator.transports,
+            })),
+            // See "Guiding use of authenticators via authenticatorSelection" below
+            authenticatorSelection: {
+                // Defaults
+                residentKey: "preferred",
+                userVerification: user_verification,
+                // Optional
+                authenticatorAttachment: attachment,
+            },
+            supportedAlgorithmIDs: algorithms,
+        });
+        await redis.db0.setUserCurrentChallenge(redis.client, account, options.challenge);
+
+        res.status(200).json(options);
+    } catch (err) {
+        const error = handleErrors(err);
+        res.status(400).json(error);
+    }
 };
 
 const line_pay_attestation_result_post = async (req, res) => {
     try {
-        const expected = {
-            challenge: req.body.challenge,
-            origin: config.server.origin,
-        };
-        const { server } = await import('@passwordless-id/webauthn');
-        const registrationParsed = await server.verifyRegistration(registration, expected);
-        await CredentialModel.saveCredential({ institution_code, account, credential });
+        const { attResp, userID } = req.body;
+        const expectedChallenge = await redis.db0.getUserCurrentChallenge(redis.client, userID);
+        let verification;
+        verification = await SimpleWebAuthnServer.verifyRegistrationResponse({
+            response: attResp,
+            expectedChallenge,
+            expectedOrigin: origin,
+            expectedRPID: rpID,
+        });
+        const { verified } = verification;
+        if (verified) {
+            const { registrationInfo } = verification;
+            const { credentialPublicKey, credentialID, counter, credentialDeviceType, credentialBackedUp } =
+                registrationInfo;
+            await CredentialModel.saveCredential({
+                credentialID,
+                institution_code: 391,
+                account: userID,
+            });
+            await AuthenticatorModel.saveAuthenticator({
+                credentialID,
+                user_institution_code: 391,
+                userID,
+                credentialPublicKey,
+                counter,
+                credentialDeviceType,
+                credentialBackedUp,
+                transports: attResp.response.transports,
+            });
+        } else {
+            throw new Error("Verify registration response failed");
+        }
+
+        res.status(200).json({ verified });
     } catch (err) {
         const error = handleErrors(err);
         res.status(400).json(error);
@@ -314,7 +397,7 @@ module.exports = {
     platform_code_get,
     line_pay_get,
     line_pay_attestation_get,
-    line_pay_attestation_options_get,
+    line_pay_attestation_options_post,
     line_pay_attestation_result_post,
     line_pay_assertion_options_post,
     line_pay_assertion_result_post,
