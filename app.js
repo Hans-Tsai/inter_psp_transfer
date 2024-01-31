@@ -1,12 +1,14 @@
-const express = require("express");
 const path = require("path");
+const url = require("url");
+const express = require("express");
 const router = require("./routes/router");
 const cookieParser = require("cookie-parser");
 
-const config = require("./config");
+const { config, startNgrok } = require("./config");
 const app = express();
 const knex = require("./database/db");
 const ngrok = config.ngrok.enabled ? require("ngrok") : null;
+const redis = require("./database/redis/redis");
 
 let server;
 
@@ -20,10 +22,10 @@ app.use(express.static("public"));
 app.use(express.json());
 // 將 API request 夾帶的 `cookie` 中的 `cookie header` 資料"解析"成 Javascript 的物件 (object) 形式，並將其儲存到 `req.cookies` 的屬性中
 app.use(cookieParser());
-app.use((req, res, next) => {
-    res.set("ngrok-skip-browser-warning", "anyValue");
-    next();
-});
+// app.use((req, res, next) => {
+//     req.headers['ngrok-skip-browser-warning'] = 'true';
+//     next();
+// });
 
 // Demo 首頁
 app.get("/", (req, res) => {
@@ -36,22 +38,19 @@ app.use(router);
 async function startServer() {
     try {
         if (ngrok) {
-            const origin = await ngrok.connect({
-                addr: config.server.port,
-                subdomain: config.ngrok.subdomain,
-                authtoken: config.ngrok.authtoken,
-            });
+            // 啟動 ngrok
+            await startNgrok();
 
             // Start the server on the correct port.
             server = app.listen(config.server.port, () => {
-                console.log(`🚀  Server is running at ${origin}`);
+                console.log(`🚀  Server is running at ${config.server.origin}`);
             });
         }
     } catch (err) {
         if (err.code === "ECONNREFUSED") {
             console.log(`⚠️  Connection refused at ${err.address}:${err.port}`);
         } else {
-            console.log(`⚠️ Ngrok error: ${JSON.stringify(err)}`);
+            console.log(`⚠️ Ngrok error: ${JSON.stringify(err.message)}`);
         }
         process.exit(1);
     }
@@ -62,6 +61,7 @@ function gracefulShutdown() {
     server.close(() => {
         console.log("\nThe application server is gracefully terminated");
 
+        redis.closeConnection();
         knex.destroy((err) => {
             if (err) {
                 console.error("An error occurred while closing the database connection", err);

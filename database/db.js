@@ -1,4 +1,4 @@
-const config = require("../config");
+const { config, configUpdated } = require('../config');
 // 連線到 MySQL 資料庫
 const knexConfig = require("../knexfile")[config.env];
 const knex = require("knex")(knexConfig);
