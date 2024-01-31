@@ -25,6 +25,8 @@ module.exports = {
         // migrations: {
         //   tableName: 'knex_migrations'
         // }
+        // 在 MySQL 中，預設的隔離級別是 REPEATABLE READ
+        isolationLevel: 'repeatable read'
     },
 
     // staging: {

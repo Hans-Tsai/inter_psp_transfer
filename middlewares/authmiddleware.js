@@ -37,11 +37,11 @@ const requireAuth = async (req, res, next) => {
         } catch (err) {
             // 若客戶端的 JWT token 無效，拋出該錯誤訊息，並將瀏覽器畫面導回到相對應的登入畫面
             console.log(err.message);
-            res.redirect(`/${tableName}/login`);
+            res.redirect(`/${tableName}/assertion`);
         }
     } else {
         // 若客戶端的 `cookie` 中沒有夾帶 `JWT token`，則將瀏覽器畫面導回到相對應的登入畫面
-        res.redirect(`/${tableName}/login`);
+        res.redirect(`/${tableName}/assertion`);
     }
 };
 

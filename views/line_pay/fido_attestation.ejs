@@ -28,7 +28,7 @@
   </style>
 </head>
 <body>
-    <h1>Line Pay (FIDO)</h2>
+    <h1>Line Pay (FIDO)</h1>
     <label for="username">使用者名稱</label>
     <input type="text" name="username" id="username" />
     <div class="username error"></div>
@@ -193,13 +193,14 @@
         body: JSON.stringify({
           attResp,
           userID: attRespJSON.user.id,
+          username: attRespJSON.user.name,
         }),
       });
       // Wait for the results of verification
       const verificationJSON = await verificationResp.json();
       if (verificationJSON && verificationJSON.verified) {
         window.alert('Registration successful!');
-        location.assign("/line_pay/login");
+        location.assign("/line_pay/assertion");
       } else {
         window.alert('Registration failed!');
         location.reload();

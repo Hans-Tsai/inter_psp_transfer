@@ -46,58 +46,46 @@ class LinePayModel {
 
     // 僅限同機構的用戶之間轉帳
     async transfer({ account, recipientAccount, amount, note }) {
-        // 在 MySQL 中，預設的隔離級別是 REPEATABLE READ
-        const isolationLevel = "repeatable read";
-        const trx = await knex.transaction({ isolationLevel });
-
         try {
-            await trx("line_pay").where({ account }).decrement("balance", amount);
-            await trx("line_pay").where({ account: recipientAccount }).increment("balance", amount);
-            await trx("transfer").insert({
-                institution_code: 391,
-                account,
-                recipient_institution_code: 391,
-                recipient_account: recipientAccount,
-                amount,
-                note,
+            await knex.transaction(async (trx) => {
+                await trx("line_pay").where({ account }).decrement("balance", amount);
+                await trx("line_pay").where({ account: recipientAccount }).increment("balance", amount);
+                await trx("transfer").insert({
+                    institution_code: 391,
+                    account,
+                    recipient_institution_code: 391,
+                    recipient_account: recipientAccount,
+                    amount,
+                    note,
+                });
             });
-
-            await trx.commit();
         } catch (error) {
-            if (!trx.isCompleted()) {
-                await trx.rollback();
-            }
-            throw new Error(error.message);
+            // 處理事務錯誤
+            console.error(error.message);
         }
     }
 
     async interAgencyTransfer({ account, recipientInstitutionCode, recipientAccount, amount, note }) {
-        // 在 MySQL 中，預設的隔離級別是 REPEATABLE READ
-        const isolationLevel = "repeatable read";
-        const trx = await knex.transaction({ isolationLevel });
-
         try {
-            const recipientInstitution = await this.knex("platform")
-                .select("table")
-                .where({ institution_code: recipientInstitutionCode })
-                .first();
-            await trx("line_pay").where({ account }).decrement("balance", amount);
-            await trx(recipientInstitution.table).where({ account: recipientAccount }).increment("balance", amount);
-            await trx("transfer").insert({
-                institution_code: 391,
-                account,
-                recipient_institution_code: recipientInstitutionCode,
-                recipient_account: recipientAccount,
-                amount,
-                note,
+            await knex.transaction(async (trx) => {
+                const recipientInstitution = await trx("platform")
+                    .select("table")
+                    .where({ institution_code: recipientInstitutionCode })
+                    .first();
+                await trx("line_pay").where({ account }).decrement("balance", amount);
+                await trx(recipientInstitution.table).where({ account: recipientAccount }).increment("balance", amount);
+                await trx("transfer").insert({
+                    institution_code: 391,
+                    account,
+                    recipient_institution_code: recipientInstitutionCode,
+                    recipient_account: recipientAccount,
+                    amount,
+                    note,
+                });
             });
-
-            await trx.commit();
-        } catch (error) {
-            if (!trx.isCompleted()) {
-                await trx.rollback();
-            }
-            throw new Error(error.message);
+        } catch (transactionError) {
+            // 處理事務錯誤
+            console.error(transactionError);
         }
     }
 

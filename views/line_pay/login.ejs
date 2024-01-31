@@ -23,7 +23,7 @@
 </head>
 <body>
   <form action="/login">
-    <h1>Line Pay</h2>
+    <h1>Line Pay</h1>
     <label for="account">帳號</label>
     <input type="text" name="account" id="account" />
     <div class="account error"></div>
@@ -33,13 +33,10 @@
     <div class="password error"></div>
 
     <div>
-      <button id="fido_assertion" type="button">FIDO 登入</button>
-      <button id="fido_attestation" type="button" data-bs-toggle="tooltip" data-bs-placement="bottom" title="尚未有帳號嗎？ 點擊註冊"
-        onclick="location.href='/line_pay/attestation?institution_code=391'">FIDO 註冊</button>
-      <!-- <button id="login" type="submit">登入</button>
+      <button id="login" type="submit">登入</button>
       <button id="register" type="button" data-bs-toggle="tooltip" data-bs-placement="bottom" title="尚未有帳號嗎？ 點擊註冊"
         onclick="location.href='/line_pay/register?institution_code=391'">註冊</button>
-      <button id="authenticate" type="button">跨機構身份驗證</button> -->
+      <!-- <button id="authenticate" type="button">跨機構身份驗證</button> -->
     </div>
   </form>
 </body>

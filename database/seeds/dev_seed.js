@@ -52,10 +52,9 @@ module.exports.seed = async function (knex) {
             table.integer("institution_code").references("platform.institution_code").notNullable().defaultTo(391);
             table.string("account").primary().notNullable().unique().checkLength("=", 10);
             table.string("password").notNullable().defaultTo("000000");
-            table.string("name").notNullable().defaultTo("新用戶");
+            table.string("name").notNullable().unique();
             table.integer("balance").notNullable().defaultTo(0);
             table.boolean("authenticated").defaultTo(false);
-            table.string("current_challenge").defaultTo(null);
         });
         // 填充資料表的範例數據
         await LinePayModel.createUser({ account: "1234567891", password: "000000", username: "admin" });
@@ -69,7 +68,7 @@ module.exports.seed = async function (knex) {
             table.integer("institution_code").references("platform.institution_code").notNullable().defaultTo(396);
             table.string("account").primary().notNullable().unique().checkLength("=", 9);
             table.string("password").notNullable().defaultTo("000000");
-            table.string("name").notNullable().defaultTo("新用戶");
+            table.string("name").notNullable().unique();
             table.integer("balance").notNullable().defaultTo(0);
             table.boolean("authenticated").defaultTo(false);
         });
@@ -114,6 +113,7 @@ module.exports.seed = async function (knex) {
             // SQL: Encode to base64url then store as `STRING`. Index this column
             table.string('credentialID', 255).references("credential.id").notNullable().unique().index();
             table.integer('user_institution_code').notNullable();
+            // 相當於各機構的 user account
             table.string('userID').notNullable();
             table.string('credentialPublicKey');
             table.bigInteger('counter');

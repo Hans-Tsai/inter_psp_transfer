@@ -45,9 +45,7 @@ class JkoPayModel {
 
     // 僅限同機構的用戶之間轉帳
     async transfer({ account, recipientAccount, amount, note }) {
-        // 在 MySQL 中，預設的隔離級別是 REPEATABLE READ
-        const isolationLevel = "repeatable read";
-        const trx = await knex.transaction({ isolationLevel });
+        const trx = await knex.transaction();
 
         try {
             await trx("jko_pay").where({ account }).decrement("balance", amount);
@@ -71,9 +69,7 @@ class JkoPayModel {
     }
 
     async interAgencyTransfer({ account, recipientInstitutionCode, recipientAccount, amount, note }) {
-        // 在 MySQL 中，預設的隔離級別是 REPEATABLE READ
-        const isolationLevel = "repeatable read";
-        const trx = await knex.transaction({ isolationLevel });
+        const trx = await knex.transaction();
         const recipientInstitutionTable = this.knex("platform").select("table").where({ institution_code: recipientInstitutionCode });
 
         try {

@@ -22,10 +22,6 @@ app.use(express.static("public"));
 app.use(express.json());
 // 將 API request 夾帶的 `cookie` 中的 `cookie header` 資料"解析"成 Javascript 的物件 (object) 形式，並將其儲存到 `req.cookies` 的屬性中
 app.use(cookieParser());
-// app.use((req, res, next) => {
-//     req.headers['ngrok-skip-browser-warning'] = 'true';
-//     next();
-// });
 
 // Demo 首頁
 app.get("/", (req, res) => {

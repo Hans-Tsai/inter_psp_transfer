@@ -1,6 +1,7 @@
 const { config, configUpdated } = require("../config");
 const path = require("path");
 const jwt = require("jsonwebtoken");
+const base64url = require("base64url");
 const knex = require("../database/db");
 const redis = require("../database/redis/redis");
 const PlatformModel = require("../models/PlatformModel");
@@ -139,7 +140,7 @@ const line_pay_attestation_options_post = async (req, res) => {
 
 const line_pay_attestation_result_post = async (req, res) => {
     try {
-        const { attResp, userID } = req.body;
+        const { attResp, userID, username } = req.body;
         const expectedChallenge = await redis.db0.getUserCurrentChallenge(redis.client, userID);
         let verification;
         verification = await SimpleWebAuthnServer.verifyRegistrationResponse({
@@ -153,21 +154,35 @@ const line_pay_attestation_result_post = async (req, res) => {
             const { registrationInfo } = verification;
             const { credentialPublicKey, credentialID, counter, credentialDeviceType, credentialBackedUp } =
                 registrationInfo;
-            await CredentialModel.saveCredential({
-                credentialID,
-                institution_code: 391,
-                account: userID,
-            });
-            await AuthenticatorModel.saveAuthenticator({
-                credentialID,
-                user_institution_code: 391,
-                userID,
-                credentialPublicKey,
-                counter,
-                credentialDeviceType,
-                credentialBackedUp,
-                transports: attResp.response.transports,
-            });
+            const base64urlCredentialID = base64url.encode(credentialID);
+            const base64urlCredentialPublicKey = base64url.encode(credentialPublicKey);
+            try {
+                await knex.transaction(async (trx) => {
+                    await trx("credential").insert({
+                        id: base64urlCredentialID,
+                        institution_code: 391,
+                        account: userID,
+                    });
+                    await trx("authenticator").insert({
+                        credentialID: base64urlCredentialID,
+                        user_institution_code: 391,
+                        userID,
+                        credentialPublicKey: base64urlCredentialPublicKey,
+                        counter,
+                        credentialDeviceType,
+                        credentialBackedUp,
+                        transports: JSON.stringify(attResp.response.transports),
+                    });
+                    await trx("line_pay").insert({
+                        institution_code: 391,
+                        account: userID,
+                        name: username,
+                    });
+                });
+            } catch (transactionError) {
+                // 處理事務錯誤
+                console.error(transactionError);
+            }
         } else {
             throw new Error("Verify registration response failed");
         }
@@ -179,7 +194,17 @@ const line_pay_attestation_result_post = async (req, res) => {
     }
 };
 
-const line_pay_assertion_options_post = async (req, res) => {};
+const line_pay_assertion_get = (req, res) => {
+    res.render("line_pay/fido_assertion");
+};
+
+const line_pay_assertion_options_post = async (req, res) => {
+    // try {
+    // } catch (err) {
+    //     const error = handleErrors(err);
+    //     res.status(400).json(error);
+    // }
+};
 
 const line_pay_assertion_result_post = async (req, res) => {};
 
@@ -399,6 +424,7 @@ module.exports = {
     line_pay_attestation_get,
     line_pay_attestation_options_post,
     line_pay_attestation_result_post,
+    line_pay_assertion_get,
     line_pay_assertion_options_post,
     line_pay_assertion_result_post,
     line_pay_register_get,
