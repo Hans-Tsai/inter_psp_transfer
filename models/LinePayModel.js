@@ -1,8 +1,9 @@
-const config = require("../config");
+const { config, configUpdated } = require('../config');
 // 連線到 MySQL 資料庫
 const knexConfig = require("../knexfile")[config.env];
 const knex = require("knex")(knexConfig);
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 const PlatformModel = require("./PlatformModel");
 
 class LinePayModel {
@@ -74,9 +75,12 @@ class LinePayModel {
         // 在 MySQL 中，預設的隔離級別是 REPEATABLE READ
         const isolationLevel = "repeatable read";
         const trx = await knex.transaction({ isolationLevel });
-        
+
         try {
-            const recipientInstitution = await this.knex("platform").select("table").where({ institution_code: recipientInstitutionCode }).first();
+            const recipientInstitution = await this.knex("platform")
+                .select("table")
+                .where({ institution_code: recipientInstitutionCode })
+                .first();
             await trx("line_pay").where({ account }).decrement("balance", amount);
             await trx(recipientInstitution.table).where({ account: recipientAccount }).increment("balance", amount);
             await trx("transfer").insert({
@@ -95,6 +99,19 @@ class LinePayModel {
             }
             throw new Error(error.message);
         }
+    }
+
+    async generateAccount() {
+        const users = await this.knex("line_pay").select("account");
+        let randomAccount = "";
+        const length = 10;
+        for (let i = 0; i < length; i++) {
+            const num = crypto.randomInt(0, 10); // 產生 0 到 9 的隨機整數
+            randomAccount += num.toString();
+        }
+        if (users.some(user => user.account == randomAccount)) return this.generateAccount();
+        
+        return randomAccount;
     }
 }
 

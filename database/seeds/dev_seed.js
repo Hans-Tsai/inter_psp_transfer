@@ -7,11 +7,12 @@ const JkoPayModel = require("../../models/JkoPayModel");
  * @returns { Promise<void> }
  */
 module.exports.seed = async function (knex) {
+    await knex.schema.dropTableIfExists("authenticator");
+    await knex.schema.dropTableIfExists("credential");
     await knex.schema.dropTableIfExists("line_pay");
     await knex.schema.dropTableIfExists("jko_pay");
-    await knex.schema.dropTableIfExists("platform");
     await knex.schema.dropTableIfExists("transfer");
-    await knex.schema.dropTableIfExists("credential");
+    await knex.schema.dropTableIfExists("platform");
 
     // 檢查資料表是否存在
     const platform_exists = await knex.schema.hasTable("platform");
@@ -21,7 +22,6 @@ module.exports.seed = async function (knex) {
             table.integer("institution_code").primary().notNullable().unique();
             table.string("institution_name").notNullable().unique();
             table.string("table").notNullable().defaultTo("table_name");
-            // 其他欄位定義
         });
         // 填充資料表的範例數據
         await knex("platform").insert([
@@ -55,7 +55,7 @@ module.exports.seed = async function (knex) {
             table.string("name").notNullable().defaultTo("新用戶");
             table.integer("balance").notNullable().defaultTo(0);
             table.boolean("authenticated").defaultTo(false);
-            // 其他欄位定義
+            table.string("current_challenge").defaultTo(null);
         });
         // 填充資料表的範例數據
         await LinePayModel.createUser({ account: "1234567891", password: "000000", username: "admin" });
@@ -72,7 +72,6 @@ module.exports.seed = async function (knex) {
             table.string("name").notNullable().defaultTo("新用戶");
             table.integer("balance").notNullable().defaultTo(0);
             table.boolean("authenticated").defaultTo(false);
-            // 其他欄位定義;
         });
         // 填充資料表的範例數據
         await JkoPayModel.createUser({ account: "987654321", password: "000000", username: "admin"});
@@ -99,11 +98,29 @@ module.exports.seed = async function (knex) {
     if (!credential_exists) {
         // 建立資料表
         await knex.schema.createTable("credential", (table) => {
-            table.increments("id").primary();
+            // SQL: Encode to base64url then store as `STRING`. Index this column
+            table.string("id", 255).primary();
             table.integer("institution_code").references("platform.institution_code").notNullable();
             table.string("account").notNullable();
-            table.json("credential").notNullable();
             table.timestamp("created_at").defaultTo(knex.fn.now());
+        });
+    }
+
+    // 檢查資料表是否存在
+    const authenticator_exists = await knex.schema.hasTable("authenticator");
+    if (!authenticator_exists) {
+        // 建立資料表
+        await knex.schema.createTable("authenticator", (table) => {
+            // SQL: Encode to base64url then store as `STRING`. Index this column
+            table.string('credentialID', 255).references("credential.id").notNullable().unique().index();
+            table.integer('user_institution_code').notNullable();
+            table.string('userID').notNullable();
+            table.string('credentialPublicKey');
+            table.bigInteger('counter');
+            table.string('credentialDeviceType', 32);
+            table.boolean('credentialBackedUp');
+            // SQL: 為了儲存 string array 可以用 JSON 格式
+            table.json('transports');  // e.g. Ex: ['usb', 'ble', 'nfc', 'internal']
         });
     }
 };
