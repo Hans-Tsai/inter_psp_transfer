@@ -36,7 +36,6 @@ async function startServer() {
         if (ngrok) {
             // 啟動 ngrok
             await startNgrok();
-
             // Start the server on the correct port.
             server = app.listen(config.server.port, () => {
                 console.log(`🚀  Server is running at ${config.server.origin}`);
@@ -52,20 +51,30 @@ async function startServer() {
     }
 }
 
-// 優雅地關閉資料庫連線
 function gracefulShutdown() {
-    server.close(() => {
-        console.log("\nThe application server is gracefully terminated");
+    // 先嘗試關閉 Redis 連接
+    redis
+        .closeConnection()
+        .then(() => {
+            console.log("\nRedis client disconnected");
 
-        redis.closeConnection();
-        knex.destroy((err) => {
-            if (err) {
-                console.error("An error occurred while closing the database connection", err);
-            } else {
-                console.log("The database connection is gracefully terminated");
-            }
+            // 然後關閉 Knex 連接
+            knex.destroy((err) => {
+                if (err) {
+                    console.error("An error occurred while closing the database connection", err);
+                } else {
+                    console.log("The database connection is gracefully terminated");
+
+                    // 最後關閉伺服器
+                    server.close(() => {
+                        console.log("The application server is gracefully terminated");
+                    });
+                }
+            });
+        })
+        .catch((error) => {
+            console.error("Error closing Redis client:", error.message);
         });
-    });
 }
 
 // 處理終止信號

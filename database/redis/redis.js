@@ -16,8 +16,7 @@ client.connect();
 
 async function closeConnection() {
   try {
-      await redis.client.quit();
-      console.log('Redis client disconnected');
+      await client.quit();
   } catch (error) {
       console.error('Error closing Redis client:', error.message);
   }
