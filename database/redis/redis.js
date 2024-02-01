@@ -1,7 +1,7 @@
 const redis = require("redis");
 const { config } = require("../../config");
 const db0 = require("./db/db0");
-// const db1 = require('./db/db1');
+const db1 = require('./db/db1');
 // const db2 = require('./db/db2');
 // const db3 = require('./db/db3');
 
@@ -25,7 +25,7 @@ async function closeConnection() {
 
 module.exports = {
     db0,
-    // db1,
+    db1,
     // db2,
     // db3,
     client,

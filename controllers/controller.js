@@ -101,7 +101,7 @@ const line_pay_attestation_options_post = async (req, res) => {
             req.body;
         const account = await LinePayModel.generateAccount();
         const userAuthenticators = await AuthenticatorModel.getUserAuthenticators({
-            user_institution_code: 391,
+            institution_code: 391,
             account,
         });
         const options = await SimpleWebAuthnServer.generateRegistrationOptions({
@@ -140,8 +140,8 @@ const line_pay_attestation_options_post = async (req, res) => {
 
 const line_pay_attestation_result_post = async (req, res) => {
     try {
-        const { attResp, userID, username } = req.body;
-        const expectedChallenge = await redis.db0.getUserCurrentChallenge(redis.client, userID);
+        const { attResp, account, username } = req.body;
+        const expectedChallenge = await redis.db0.getUserCurrentChallenge(redis.client, account);
         let verification;
         verification = await SimpleWebAuthnServer.verifyRegistrationResponse({
             response: attResp,
@@ -161,12 +161,12 @@ const line_pay_attestation_result_post = async (req, res) => {
                     await trx("credential").insert({
                         id: base64urlCredentialID,
                         institution_code: 391,
-                        account: userID,
+                        account,
                     });
                     await trx("authenticator").insert({
                         credentialID: base64urlCredentialID,
-                        user_institution_code: 391,
-                        userID,
+                        institution_code: 391,
+                        account,
                         credentialPublicKey: base64urlCredentialPublicKey,
                         counter,
                         credentialDeviceType,
@@ -175,7 +175,7 @@ const line_pay_attestation_result_post = async (req, res) => {
                     });
                     await trx("line_pay").insert({
                         institution_code: 391,
-                        account: userID,
+                        account,
                         name: username,
                     });
                 });
@@ -199,14 +199,70 @@ const line_pay_assertion_get = (req, res) => {
 };
 
 const line_pay_assertion_options_post = async (req, res) => {
-    // try {
-    // } catch (err) {
-    //     const error = handleErrors(err);
-    //     res.status(400).json(error);
-    // }
+    try {
+        const { username } = req.body;
+        const userInfo = await LinePayModel.getUserInfo({ name: username });
+        const account = userInfo.account;
+        const userAuthenticators = await AuthenticatorModel.getUserAuthenticators({
+            institution_code: 391,
+            account,
+        });
+        const options = await SimpleWebAuthnServer.generateAuthenticationOptions({
+            rpID,
+            // Require users to use a previously-registered authenticator
+            allowCredentials: userAuthenticators.map((authenticator) => ({
+                id: authenticator.credentialID,
+                type: "public-key",
+                transports: authenticator.transports,
+            })),
+            userVerification: "preferred",
+        });
+        await redis.db1.setUserCurrentChallenge(redis.client, account, options.challenge);
+
+        res.status(200).json(options);
+    } catch (err) {
+        const error = handleErrors(err);
+        res.status(400).json(error);
+    }
 };
 
-const line_pay_assertion_result_post = async (req, res) => {};
+const line_pay_assertion_result_post = async (req, res) => {
+    try {
+        const { asseResp, username } = req.body;
+        const userInfo = await LinePayModel.getUserInfo({ name: username });
+        const account = userInfo.account;
+        const expectedChallenge = await redis.db1.getUserCurrentChallenge(redis.client, account);
+        const authenticator = await AuthenticatorModel.getUserAuthenticator({
+            institution_code: 391,
+            account,
+            credentialID: asseResp.id,
+        });
+        if (!authenticator) throw new Error(`Could not find authenticator ${asseResp.id} for user ${account}`);
+
+        let verification;
+        verification = await SimpleWebAuthnServer.verifyAuthenticationResponse({
+            response: asseResp,
+            expectedChallenge,
+            expectedOrigin: origin,
+            expectedRPID: rpID,
+            authenticator,
+        });
+        const { verified } = verification;
+        const { authenticationInfo } = verification;
+        const { newCounter } = authenticationInfo;
+        await AuthenticatorModel.updatedAuthenticatorCounter({ credentialID: asseResp.id, newCounter });
+        const jwtToken = createToken(account, institutionCode);
+        res.cookie("jwt", jwtToken, {
+            httpOnly: true,
+            maxAge: maxValidDuration * 1000, // 以毫秒為單位
+        });
+
+        res.status(200).json({ verified });
+    } catch (err) {
+        const error = handleErrors(err);
+        res.status(400).json(error);
+    }
+};
 
 const line_pay_register_get = (req, res) => {
     res.render("line_pay/register");
@@ -222,14 +278,12 @@ const line_pay_register_post = async (req, res) => {
             username,
         });
         const user = await LinePayModel.getUserInfo(account);
-        // 產生一個帶有簽章(signature)的 JWT token
         const jwtToken = createToken(account, institutionCode);
-        // 將這個 JWT token 儲存到 response 物件的 cookie 中
         res.cookie("jwt", jwtToken, {
-            // 設定只能給 Web Server 的發送 http(s) request 的時候才能使用，以防止客戶端透過 javascript 來竄改此 JWT token
             httpOnly: true,
             maxAge: maxValidDuration * 1000, // 以毫秒為單位
         });
+
         res.status(200).json(user);
     } catch (err) {
         const error = handleErrors(err);
@@ -255,6 +309,7 @@ const line_pay_login_post = async (req, res) => {
             httpOnly: true,
             maxAge: maxValidDuration * 1000, // 以毫秒為單位
         });
+        
         res.status(200).json(data);
     } catch (err) {
         const error = handleErrors(err);

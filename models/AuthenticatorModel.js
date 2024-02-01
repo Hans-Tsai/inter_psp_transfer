@@ -11,8 +11,8 @@ class AuthenticatorModel {
 
     async saveAuthenticator({
         credentialID,
-        user_institution_code,
-        userID,
+        institution_code,
+        account,
         credentialPublicKey,
         counter,
         credentialDeviceType,
@@ -24,8 +24,8 @@ class AuthenticatorModel {
         const JSONTransports = JSON.stringify(transports);
         return this.knex("authenticator").insert({
             credentialID: base64urlCredentialID,
-            user_institution_code,
-            userID,
+            institution_code,
+            account,
             credentialPublicKey: base64urlCredentialPublicKey,
             counter,
             credentialDeviceType,
@@ -34,8 +34,55 @@ class AuthenticatorModel {
         });
     }
 
-    async getUserAuthenticators({ user_institution_code, account }) {
-        return this.knex("authenticator").where({ user_institution_code, userID: account });
+    /**
+     * @param {number} institution_code
+     * @param {string} account
+     * @param {string} name (username)
+     * @returns Authenticator[]
+     * @description Retrieve any of the user's previously registered authenticators.
+     */
+    async getUserAuthenticators({ institution_code, account, name }) {
+        let query = this.knex("authenticator").where({ institution_code });
+        // 如果 account 或 name 有值，則加入條件
+        if (account || name) {
+            query = query.andWhere(function () {
+                if (account) this.orWhere({ account });
+                if (name) this.orWhere({ name });
+            });
+        }
+
+        return query;
+    }
+
+    /**
+     * @param {number} institution_code
+     * @param {string} account
+     * @param {string} name (username)
+     * @param {string} credentialID
+     * @returns authenticator
+     * @description Retrieve an authenticator from the DB that should match the `credentialID` in the returned credential.
+     */
+    async getUserAuthenticator({ institution_code, account, name, credentialID }) {
+        let query = this.knex("authenticator").where({ institution_code });
+        // 如果 account 或 name 有值，則加入條件
+        if (account || name) {
+            query = query.andWhere(function () {
+                if (account) this.orWhere({ account });
+                if (name) this.orWhere({ name });
+            });
+        }
+        // 如果 credentialID 有值，則加入條件
+        if (credentialID) {
+            const base64urlCredentialID = base64url.encode(credentialID);
+            query = query.andWhere({ credentialID: base64urlCredentialID });
+        }
+        query = query.first();
+
+        return query;
+    }
+
+    async updatedAuthenticatorCounter({ credentialID, newCounter }) {
+        return this.knex("authenticator").where({ credentialID }).update({ counter: newCounter });
     }
 }
 

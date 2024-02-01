@@ -112,9 +112,9 @@ module.exports.seed = async function (knex) {
         await knex.schema.createTable("authenticator", (table) => {
             // SQL: Encode to base64url then store as `STRING`. Index this column
             table.string('credentialID', 255).references("credential.id").notNullable().unique().index();
-            table.integer('user_institution_code').notNullable();
-            // 相當於各機構的 user account
-            table.string('userID').notNullable();
+            table.integer('institution_code').notNullable();
+            table.string('account').notNullable();
+            // SQL: Encode to base64url then store as `STRING`.
             table.string('credentialPublicKey');
             table.bigInteger('counter');
             table.string('credentialDeviceType', 32);

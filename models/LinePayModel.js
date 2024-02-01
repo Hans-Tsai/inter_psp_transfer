@@ -32,8 +32,17 @@ class LinePayModel {
         return user;
     }
 
-    async getUserInfo(account) {
-        return this.knex("line_pay").where({ account }).first();
+    async getUserInfo({ account, name }) {
+        let query = this.knex("line_pay");
+        if (account || name) {
+            query = query.where(function () {
+                if (account) this.orWhere({ account });
+                if (name) this.orWhere({ name });
+            });
+        }
+        query = query.first();
+
+        return query;
     }
 
     async deposit({ account, amount }) {
