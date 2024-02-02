@@ -3,6 +3,7 @@ const { config, configUpdated } = require("../config");
 const knexConfig = require("../knexfile")[config.env];
 const knex = require("knex")(knexConfig);
 const base64url = require("base64url");
+const { isValidBase64Url } = require("../modules/webauthn/utils");
 
 class AuthenticatorModel {
     constructor(knex) {
@@ -19,8 +20,8 @@ class AuthenticatorModel {
         credentialBackedUp,
         transports,
     }) {
-        const base64urlCredentialID = base64url.encode(credentialID);
-        const base64urlCredentialPublicKey = base64url.encode(credentialPublicKey);
+        const base64urlCredentialID = isValidBase64Url(credentialID) ? credentialID : base64url.encode(credentialID);
+        const base64urlCredentialPublicKey = isValidBase64Url(credentialPublicKey) ? credentialPublicKey : base64url.encode(credentialPublicKey);
         const JSONTransports = JSON.stringify(transports);
         return this.knex("authenticator").insert({
             credentialID: base64urlCredentialID,
@@ -73,7 +74,7 @@ class AuthenticatorModel {
         }
         // 如果 credentialID 有值，則加入條件
         if (credentialID) {
-            const base64urlCredentialID = base64url.encode(credentialID);
+            const base64urlCredentialID = isValidBase64Url(credentialID) ? credentialID : base64url.encode(credentialID);
             query = query.andWhere({ credentialID: base64urlCredentialID });
         }
         query = query.first();
@@ -82,7 +83,8 @@ class AuthenticatorModel {
     }
 
     async updatedAuthenticatorCounter({ credentialID, newCounter }) {
-        return this.knex("authenticator").where({ credentialID }).update({ counter: newCounter });
+        const base64urlCredentialID = isValidBase64Url(credentialID) ? credentialID : base64url.encode(credentialID);
+        return this.knex("authenticator").where({ credentialID: base64urlCredentialID }).update({ counter: newCounter });
     }
 }
 

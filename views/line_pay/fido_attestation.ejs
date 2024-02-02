@@ -11,19 +11,19 @@
         <!-- <link rel="stylesheet" href="/styles.css"> -->
         <style>
             /* body {
-      background-color: #f8f9fa;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      height: 100vh;
-      margin: 0;
-      padding-top: 20px;
-    }
-    .btn {
-      width: 200px;
-      margin-top: 20px;
-    } */
+              background-color: #f8f9fa;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: flex-start;
+              height: 100vh;
+              margin: 0;
+              padding-top: 20px;
+            }
+            .btn {
+              width: 200px;
+              margin-top: 20px;
+            } */
             ins {
                 font-weight: bold;
             }
@@ -67,9 +67,9 @@
                 <!-- Attachment -->
                 <label for="attachment"> Attachment </label>
                 <select name="attachment" id="attachment">
-                    <option value="all" selected>All Supported</option>
-                    <option value="cross_platform">Cross-Platform</option>
-                    <option value="platform">Platform</option>
+                    <option>All Supported</option>
+                    <option value="cross-platform">Cross-Platform</option>
+                    <option value="platform" selected>Platform</option>
                 </select>
                 <p>Describe authenticators' attachment modalities</p>
 
@@ -102,8 +102,8 @@
                 <label for="pubKeyAlgo"> Public Key Algorithms (Multi-select enabled) </label>
                 <div class="form-check" name="pubKeyAlgo" id="pubKeyAlgo">
                     <input type="checkbox" value="-8" id="optAlgEd25519" /> Ed25519
-                    <input type="checkbox" value="-7" id="optAlgES256" /> ES256
-                    <input type="checkbox" value="-257" id="optAlgRS256" /> RS256
+                    <input type="checkbox" value="-7" id="optAlgES256" checked /> ES256
+                    <input type="checkbox" value="-257" id="optAlgRS256" checked /> RS256
                 </div>
                 <p>This is an array of objects describing what public key types are acceptable to a server.</p>
 
@@ -119,15 +119,6 @@
                     request may be best completed.
                 </p>
                 <p>Order: <span id="orderDisplay" style="color: lightgrey"></span></p>
-
-                <ins>Authentication Settings</ins>
-                <!-- User Verification -->
-                <label for="optAuthUserVerification"> User Verification </label>
-                <select name="optAuthUserVerification" id="optAuthUserVerification">
-                    <option value="discouraged">Discouraged</option>
-                    <option value="preferred" selected>Preferred</option>
-                    <option value="required">Required</option>
-                </select>
 
                 <button class="btn btn-warning" onclick="location.reload();">重新設定</button>
             </div>
@@ -153,7 +144,7 @@
             } else {
                 regHintsOrder = regHintsOrder.filter((item) => item !== event.target.value);
             }
-            document.getElementById("orderDisplay").textContent = regHintsOrder.join(", ");
+            document.getElementById("orderDisplay").textContent = regHintsOrder.join(",");
         });
 
         async function attestation() {
@@ -161,16 +152,17 @@
                 let username = document.getElementById("username").value;
                 let regUserVerification = document.getElementById("optRegUserVerification").value;
                 let attachment = document.getElementById("attachment").value;
+                if (attachment === "All Supported") attachment = undefined;
                 let discoverableCredential = document.getElementById("discoverableCredential").value;
                 let attestation = document.getElementById("attestation").value;
                 const pubKeyAlgo = [];
                 let algEd25519 = document.getElementById("optAlgEd25519");
                 let algES256 = document.getElementById("optAlgES256");
                 let algRS256 = document.getElementById("optAlgRS256");
-                if (algEd25519.checked) pubKeyAlgo.push(algEd25519.value);
-                if (algES256.checked) pubKeyAlgo.push(algES256.value);
-                if (algRS256.checked) pubKeyAlgo.push(algRS256.value);
-                let regHints = document.getElementById("orderDisplay").textContent;
+                if (algEd25519.checked) pubKeyAlgo.push(Number(algEd25519.value));
+                if (algES256.checked) pubKeyAlgo.push(Number(algES256.value));
+                if (algRS256.checked) pubKeyAlgo.push(Number(algRS256.value));
+                let regHints = document.getElementById("orderDisplay").textContent; // regHints 是字串，e.g. "" 或 "security-key,hybrid"
 
                 const { startRegistration } = SimpleWebAuthnBrowser;
                 // GET registration options from the endpoint that calls
@@ -196,7 +188,12 @@
                 });
                 // Pass the options to the authenticator and wait for a response
                 const attRespJSON = await resp.json();
+                console.log('REGISTRATION OPTIONS');
+                console.log(JSON.stringify(attRespJSON, null, 2));
+
                 const attResp = await startRegistration(attRespJSON);
+                console.log('REGISTRATION RESPONSE');
+                console.log(JSON.stringify(attResp, null, 2));
 
                 // POST the response to the endpoint that calls
                 // @simplewebauthn/server -> verifyRegistrationResponse()

@@ -92,13 +92,40 @@ const line_pay_attestation_get = (req, res) => {
 
 const line_pay_attestation_options_post = async (req, res) => {
     try {
-        const { username, user_verification, attestation, attachment, algorithms, discoverable_credential, hints } =
+        let { username, user_verification, attestation, attachment, algorithms, discoverable_credential, hints } =
             req.body;
         const account = await LinePayModel.generateAccount();
         const userAuthenticators = await AuthenticatorModel.getUserAuthenticators({
             institution_code: 391,
             account,
         });
+        let residentKey = "";
+        switch (discoverable_credential) {
+            case "discouraged":
+                residentKey = "discouraged";
+                break;
+            case "preferred":
+                residentKey = "preferred";
+                break;
+            case "required":
+                residentKey = "required";
+                break;
+            default:
+                residentKey = "preferred";
+                break;
+        }
+        if (hints.length > 0) {
+            hints = [hints][0].split(",");
+            if (hints[0] === "security-key" || hints[0] === "hybrid") {
+                attachment = "cross-platform";
+            } else if (hints[0] === "client-device") {
+                attachment = "platform";
+            }
+        }
+        else {
+            attachment = undefined;
+        }
+
         const options = await SimpleWebAuthnServer.generateRegistrationOptions({
             rpName,
             rpID,
@@ -109,7 +136,7 @@ const line_pay_attestation_options_post = async (req, res) => {
             attestationType: attestation,
             // Prevent users from re-registering existing authenticators
             excludeCredentials: userAuthenticators.map((authenticator) => ({
-                id: authenticator.credentialID,
+                id: base64url.toBuffer(authenticator.credentialID),
                 type: "public-key",
                 // Optional
                 transports: authenticator.transports,
@@ -117,7 +144,7 @@ const line_pay_attestation_options_post = async (req, res) => {
             // See "Guiding use of authenticators via authenticatorSelection" below
             authenticatorSelection: {
                 // Defaults
-                residentKey: "preferred",
+                residentKey,
                 userVerification: user_verification,
                 // Optional
                 authenticatorAttachment: attachment,
@@ -195,7 +222,7 @@ const line_pay_assertion_get = (req, res) => {
 
 const line_pay_assertion_options_post = async (req, res) => {
     try {
-        const { username } = req.body;
+        const { username, userVerification } = req.body;
         const userInfo = await LinePayModel.getUserInfo({ name: username });
         const account = userInfo.account;
         const userAuthenticators = await AuthenticatorModel.getUserAuthenticators({
@@ -204,13 +231,13 @@ const line_pay_assertion_options_post = async (req, res) => {
         });
         const options = await SimpleWebAuthnServer.generateAuthenticationOptions({
             rpID,
+            userVerification,
             // Require users to use a previously-registered authenticator
             allowCredentials: userAuthenticators.map((authenticator) => ({
-                id: authenticator.credentialID,
+                id: base64url.toBuffer(authenticator.credentialID),
                 type: "public-key",
                 transports: authenticator.transports,
             })),
-            userVerification: "preferred",
         });
         await redis.db1.setUserCurrentChallenge(redis.client, account, options.challenge);
 
@@ -227,12 +254,14 @@ const line_pay_assertion_result_post = async (req, res) => {
         const userInfo = await LinePayModel.getUserInfo({ name: username });
         const account = userInfo.account;
         const expectedChallenge = await redis.db1.getUserCurrentChallenge(redis.client, account);
-        const authenticator = await AuthenticatorModel.getUserAuthenticator({
+        let authenticator = await AuthenticatorModel.getUserAuthenticator({
             institution_code: 391,
             account,
             credentialID: asseResp.id,
         });
         if (!authenticator) throw new Error(`Could not find authenticator ${asseResp.id} for user ${account}`);
+        authenticator.credentialID = base64url.toBuffer(authenticator.credentialID);
+        authenticator.credentialPublicKey = base64url.toBuffer(authenticator.credentialPublicKey);
 
         let verification;
         verification = await SimpleWebAuthnServer.verifyAuthenticationResponse({
@@ -246,7 +275,7 @@ const line_pay_assertion_result_post = async (req, res) => {
         const { authenticationInfo } = verification;
         const { newCounter } = authenticationInfo;
         await AuthenticatorModel.updatedAuthenticatorCounter({ credentialID: asseResp.id, newCounter });
-        const jwtToken = createToken(account, institutionCode);
+        const jwtToken = createToken(account, institutionCode = 391);
         res.cookie("jwt", jwtToken, {
             httpOnly: true,
             maxAge: maxValidDuration * 1000, // 以毫秒為單位
