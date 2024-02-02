@@ -1,17 +1,20 @@
 const path = require("path");
 const url = require("url");
-const express = require("express");
+const util = require("util");
+const fs = require("fs");
+const http = require("http");
+const https = require("https");
+const { config } = require("./config");
 const router = require("./routes/router");
 const cookieParser = require("cookie-parser");
+const express = require("express");
 
-const { config, startNgrok } = require("./config");
 const app = express();
 const knex = require("./database/db");
-const ngrok = config.ngrok.enabled ? require("ngrok") : null;
 const redis = require("./database/redis/redis");
 
 let server;
-
+let expectedOrigin = "";
 // 指定 view engine 為 `ejs` 模板引擎
 app.set("view engine", "ejs");
 
@@ -32,49 +35,56 @@ app.get("/", (req, res) => {
 app.use(router);
 
 async function startServer() {
-    try {
-        if (ngrok) {
-            // 啟動 ngrok
-            await startNgrok();
-            // Start the server on the correct port.
-            server = app.listen(config.server.port, () => {
-                console.log(`🚀  Server is running at ${config.server.origin}`);
+    if (config.enable_https) {
+        const host = "0.0.0.0";
+        const port = config.server.port;
+        expectedOrigin = `https://${config.rp.id}:${port}`;
+
+        server = https
+            .createServer(
+                {
+                    key: fs.readFileSync("./key.pem"),
+                    cert: fs.readFileSync("./cert.pem"),
+                },
+                app
+            )
+            .listen(port, host, () => {
+                console.log(`🚀 Server ready at ${expectedOrigin} (${host}:${port})`);
             });
-        }
-    } catch (err) {
-        if (err.code === "ECONNREFUSED") {
-            console.log(`⚠️  Connection refused at ${err.address}:${err.port}`);
-        } else {
-            console.log(`⚠️ Ngrok error: ${JSON.stringify(err.message)}`);
-        }
-        process.exit(1);
+        // 更新 config 的值
+        config.server.origin = expectedOrigin;
+        config.rp.origin = expectedOrigin;
+    } else {
+        const host = "127.0.0.1";
+        const port = config.server.port;
+        expectedOrigin = `http://localhost:${port}`;
+
+        server = http.createServer(app).listen(port, host, () => {
+            console.log(`🚀 Server ready at ${expectedOrigin} (${host}:${port})`);
+        });
+        // 更新 config 的值
+        config.server.origin = "http://localhost";
+        config.rp.origin = "http://localhost";
     }
 }
 
-function gracefulShutdown() {
-    // 先嘗試關閉 Redis 連接
-    redis
-        .closeConnection()
-        .then(() => {
-            console.log("\nRedis client disconnected");
+async function gracefulShutdown() {
+    try {
+        await redis.closeConnection();
+        console.log("");
+        console.log(util.inspect("Redis client is disconnected.", { colors: true }));
 
-            // 然後關閉 Knex 連接
-            knex.destroy((err) => {
-                if (err) {
-                    console.error("An error occurred while closing the database connection", err);
-                } else {
-                    console.log("The database connection is gracefully terminated");
+        await knex.destroy();
+        console.log(util.inspect("Knex database connection is disconnected.", { colors: true }));
 
-                    // 最後關閉伺服器
-                    server.close(() => {
-                        console.log("The application server is gracefully terminated");
-                    });
-                }
-            });
-        })
-        .catch((error) => {
-            console.error("Error closing Redis client:", error.message);
+        server.close(() => {
+            console.log(util.inspect("The application server is gracefully terminated.", { colors: true }));
+            process.exit(0); // Success
         });
+    } catch (err) {
+        console.error("Error during shutdown:", err.message);
+        process.exit(1); // Error
+    }
 }
 
 // 處理終止信號

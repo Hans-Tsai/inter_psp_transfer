@@ -13,19 +13,14 @@ const utils = require("../modules/webauthn/utils");
 const SimpleWebAuthnServer = require("@simplewebauthn/server");
 
 let rpName, rpID, origin;
-(async function () {
-    await configUpdated;
-    // console.log('配置已更新');
-    // 宣告相關參數
-    // Human-readable title for your website
-    rpName = config.rp.name;
-    // A unique identifier for your website
-    rpID = config.rp.id;
-    // The URL at which registrations and authentications should occur
-    origin = config.rp.origin;
-
-    // console.dir(config, { depth: 10 });
-})();
+// 宣告相關參數
+// Human-readable title for your website
+rpName = config.rp.name;
+// A unique identifier for your website
+rpID = config.rp.id;
+// The URL at which registrations and authentications should occur
+origin = config.rp.origin;
+// console.dir(config, { depth: 10 });
 
 //#region 工具函式
 // TODO: 建立一個用來專門產生錯誤事件的物件(=> error object)的錯誤事件處理函數
@@ -309,7 +304,7 @@ const line_pay_login_post = async (req, res) => {
             httpOnly: true,
             maxAge: maxValidDuration * 1000, // 以毫秒為單位
         });
-        
+
         res.status(200).json(data);
     } catch (err) {
         const error = handleErrors(err);

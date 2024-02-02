@@ -2,33 +2,34 @@
 require("dotenv").config();
 const ngrok = require("ngrok");
 const { URL } = require("url");
+const fs = require("fs");
+const https = require("https");
 
 // 初始設定
 let config = {
     // Current Environment
     env: process.env.NODE_ENV || "development",
+    // Enable HTTPS
+    enable_https: process.env.ENABLE_HTTPS || false,
     // Backend Server
     server: {
-        origin: process.env.SERVER_ORIGIN || "http://127.0.0.1",
-        port: process.env.PORT || 3000,
+        protocol: process.env.ENABLE_HTTPS ? "https:" : "http:",
+        hostname: process.env.ENABLE_HTTPS ? "0.0.0.0" : "127.0.0.1",
+        port: process.env.PORT || 8000,
+        origin: "",
         jwt_secret: process.env.JWT_SECRET || "fido_uaf",
-    },
-    ngrok: {
-        enabled: process.env.NODE_ENV !== "production",
-        url: process.env.NGROK_URL || '',
-        port: process.env.PORT || 3000,
-        // subdomain: process.env.NGROK_SUBDOMAIN,
-        authtoken: process.env.NGROK_AUTHTOKEN || '2O0r0kPDqq1qGfLtAZDxcWKt3I0_7jVmHhnvGBKoZHLc9uqQV',
     },
     // Relying Party Server (RP)
     rp: {
-        origin: process.env.RP_ORIGIN,
-        name: process.env.RP_NAME || 'myRP',
-        id: process.env.RP_ID,
+        name: process.env.RP_NAME || "myRP",
+        protocol: process.env.ENABLE_HTTPS ? "https:" : "http:",
+        // RP ID 應該是一個有效的網域名稱，所以我們使用主機名稱 (hostname)
+        id: process.env.RP_ID || "localhost",
+        origin: "",
     },
     // Database: MySQL Server
     db: {
-        host: process.env.DB_HOST || "localhost",
+        host: process.env.DB_HOST || "127.0.0.1",
         port: process.env.DB_PORT || 3306,
         user: process.env.DB_USER || "root",
         password: process.env.DB_PASSWORD || "root12345",
@@ -36,38 +37,14 @@ let config = {
     },
     // Database: Redis Server
     redis: {
-        host: process.env.REDIS_HOST || "localhost",
+        host: process.env.REDIS_HOST || "127.0.0.1",
         port: process.env.REDIS_PORT || 6379,
         username: process.env.REDIS_USERNAME || "root",
         password: process.env.REDIS_PASSWORD || "root12345",
     },
 };
 
-let resolveConfigUpdate;
-const configUpdated = new Promise((resolve) => {
-    resolveConfigUpdate = resolve;
-});
+config.server.origin = `${config.server.protocol}//${config.server.hostname}:${config.server.port}`;
+config.rp.origin = `${config.rp.protocol}//${config.rp.id}`;
 
-async function startNgrok() {
-    const ngrokUrl = await ngrok.connect({
-        addr: config.server.port,
-        // subdomain: config.ngrok.subdomain,
-        authtoken: config.ngrok.authtoken,
-    });
-    const ngrokUrlObj = new URL(ngrokUrl);
-
-    // 將 ngrok URL 更新到 config 的值
-    config.server.origin = ngrokUrl;
-    config.ngrok.url = ngrokUrl;
-    config.rp.origin = ngrokUrl;
-    config.rp.id = ngrokUrlObj.hostname; // RP ID 應該是一個有效的網域名稱，所以我們使用主機名稱
-
-     // 解析 configUpdated Promise
-     resolveConfigUpdate();
-}
-
-module.exports = {
-    config,
-    startNgrok,
-    configUpdated
-};
+module.exports = { config };
