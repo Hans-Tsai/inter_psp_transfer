@@ -275,7 +275,8 @@ const line_pay_assertion_result_post = async (req, res) => {
         const { authenticationInfo } = verification;
         const { newCounter } = authenticationInfo;
         await AuthenticatorModel.updatedAuthenticatorCounter({ credentialID: asseResp.id, newCounter });
-        const jwtToken = createToken(account, institutionCode = 391);
+        let institutionCode = 391;
+        const jwtToken = createToken(account, institutionCode);
         res.cookie("jwt", jwtToken, {
             httpOnly: true,
             maxAge: maxValidDuration * 1000, // 以毫秒為單位
