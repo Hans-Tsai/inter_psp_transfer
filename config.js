@@ -44,7 +44,7 @@ let config = {
     },
 };
 
-config.server.origin = `${config.server.protocol}//${config.server.hostname}:${config.server.port}`;
+config.server.origin = `${config.server.protocol}//${config.server.hostname}`;
 config.rp.origin = `${config.rp.protocol}//${config.rp.id}`;
 
 module.exports = { config };

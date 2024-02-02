@@ -37,8 +37,8 @@ app.use(router);
 async function startServer() {
     if (config.enable_https) {
         const host = "0.0.0.0";
-        const port = config.server.port;
-        expectedOrigin = `https://${config.rp.id}:${port}`;
+        const port = 443;
+        expectedOrigin = `https://${config.rp.id}`;
 
         server = https
             .createServer(
@@ -51,20 +51,22 @@ async function startServer() {
             .listen(port, host, () => {
                 console.log(`🚀 Server ready at ${expectedOrigin} (${host}:${port})`);
             });
-        // 更新 config 的值
+        
+        // 更新 config 內容
         config.server.origin = expectedOrigin;
         config.rp.origin = expectedOrigin;
     } else {
         const host = "127.0.0.1";
-        const port = config.server.port;
+        const port = 8000;
         expectedOrigin = `http://localhost:${port}`;
 
         server = http.createServer(app).listen(port, host, () => {
             console.log(`🚀 Server ready at ${expectedOrigin} (${host}:${port})`);
         });
-        // 更新 config 的值
-        config.server.origin = "http://localhost";
-        config.rp.origin = "http://localhost";
+
+        // 更新 config 內容
+        config.server.origin = expectedOrigin;
+        config.rp.origin = expectedOrigin;
     }
 }
 
