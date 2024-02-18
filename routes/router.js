@@ -1,7 +1,7 @@
 const express = require('express');
 const controller = require('../controllers/controller');
 const router = express.Router();
-const { requireAuth, checkUser, checkFinancialVerification } = require('../middlewares/authmiddleware');
+const { requireAuth, checkUser, requireFinancialVerification } = require('../middlewares/authmiddleware');
 
 // 電子支付跨機構共用平台
 router.get('/platform', controller.platform_get);
@@ -35,8 +35,8 @@ router.post('/line_pay/financial_verification/assertion/result', requireAuth, ch
 
 router.get('/line_pay/transfer', requireAuth, checkUser, controller.line_pay_transfer_get);
 router.post('/line_pay/transfer', requireAuth, checkUser, controller.line_pay_transfer_post);
-router.get('/line_pay/inter_agency_transfer', requireAuth, checkUser, checkFinancialVerification, controller.line_pay_inter_agency_transfer_get);
-router.post('/line_pay/inter_agency_transfer', requireAuth, checkUser, checkFinancialVerification, controller.line_pay_inter_agency_transfer_post);
+router.get('/line_pay/inter_agency_transfer', requireAuth, checkUser, requireFinancialVerification, controller.line_pay_inter_agency_transfer_get);
+router.post('/line_pay/inter_agency_transfer', requireAuth, checkUser, requireFinancialVerification, controller.line_pay_inter_agency_transfer_post);
 
 // JKO Pay
 router.get('/jko_pay', requireAuth, checkUser, controller.jko_pay_get);

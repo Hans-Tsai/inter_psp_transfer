@@ -47,7 +47,7 @@ const checkUser = async (req, res, next) => {
             const institutionCode = decodedToken["institution_code"];
             const rows = await knex("platform").select("table").where("institution_code", institutionCode);
             const userInfo = await knex(rows[0].table)
-                .select("account", "name", "balance")
+                .select("account", "name", "balance", "isFinancialVerified")
                 .where("account", decodedToken.account)
                 .first();
 
@@ -64,7 +64,7 @@ const checkUser = async (req, res, next) => {
 };
 
 /** 檢查當前使用者，應進行二次金融驗證 (financial verification) */
-const checkFinancialVerification = async (req, res, next) => {
+const requireFinancialVerification = async (req, res, next) => {
     const fvToken = req.cookies.fvToken;
     let decodedToken;
     let institutionCode;
@@ -85,15 +85,15 @@ const checkFinancialVerification = async (req, res, next) => {
             next();
         } catch (error) {
             console.log(error.message);
-            res.redirect(`/${tableName}/financial_verification/assertion`);
+            res.redirect(`/${tableName}/financial_verification`);
         }
     } else {
-        res.redirect(`/${tableName}/financial_verification/assertion`);
+        res.redirect(`/${tableName}/financial_verification`);
     }
 };
 
 module.exports = {
     requireAuth,
     checkUser,
-    checkFinancialVerification,
+    requireFinancialVerification,
 };
