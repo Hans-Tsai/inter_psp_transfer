@@ -35,8 +35,11 @@ FIDO UAF和WebAuthn均支持多種加密演算法，包括橢圓曲線演算法�
 
 ## TODO
 - [x] controller 的 **line_pay_attestation_options_post** API 的 `discoverable_credential`, `hints` 參數，需要傳入到 **SimpleWebAuthnServer.generateRegistrationOptions()** 中
-- [ ] 實作跨機構身份驗證: 登入有一把私鑰，當要跨機構轉帳時，能用另一把私鑰做驗證
+- [x] 實作跨機構身份驗證: 登入有一把私鑰，當要跨機構轉帳時，能用另一把私鑰做驗證
 - [ ] 實作 Jko_Pay
+
+## TO Fix
+- [ ] 使用者失去 `jwt`, `fvToken` 時，會無法重新登入，待查原因是什麼？
 
 ## 參考資料
 - FIDO

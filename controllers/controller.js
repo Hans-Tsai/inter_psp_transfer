@@ -9,6 +9,8 @@ const LinePayModel = require("../models/LinePayModel");
 const JkoPayModel = require("../models/JkoPayModel");
 const CredentialModel = require("../models/CredentialModel");
 const AuthenticatorModel = require("../models/AuthenticatorModel");
+const FV_CredentialModel = require("../models/FV_CredentialModel");
+const FV_AuthenticatorModel = require("../models/FV_AuthenticatorModel");
 const utils = require("../modules/webauthn/utils");
 const SimpleWebAuthnServer = require("@simplewebauthn/server");
 
@@ -121,8 +123,7 @@ const line_pay_attestation_options_post = async (req, res) => {
             } else if (hints[0] === "client-device") {
                 attachment = "platform";
             }
-        }
-        else {
+        } else {
             attachment = undefined;
         }
 
@@ -281,6 +282,14 @@ const line_pay_assertion_result_post = async (req, res) => {
             httpOnly: true,
             maxAge: maxValidDuration * 1000, // 以毫秒為單位
         });
+        let fvToken = "";
+        if (userInfo.isFinancialVerified) {
+            fvToken = createToken(account, institutionCode);
+            res.cookie("fvToken", fvToken, {
+                httpOnly: true,
+                maxAge: maxValidDuration * 1000, // 以毫秒為單位
+            });
+        }
 
         res.status(200).json({ verified });
     } catch (err) {
@@ -390,8 +399,217 @@ const line_pay_withdraw_post = async (req, res) => {
     }
 };
 
-const line_pay_authentication_get = (req, res) => {
-    res.render("line_pay/authentication");
+const line_pay_financial_verification_get = (req, res) => {
+    res.render("line_pay/financial_verification/index");
+};
+
+const line_pay_financial_verification_attestation_get = (req, res) => {
+    res.render("line_pay/financial_verification/fido_attestation");
+};
+
+const line_pay_financial_verification_attestation_options_post = async (req, res) => {
+    try {
+        let { username, user_verification, attestation, attachment, algorithms, discoverable_credential, hints } =
+            req.body;
+        const userInfo = await LinePayModel.getUserInfo({ name: username });
+        const account = userInfo.account;
+        const userFVAuthenticators = await FV_AuthenticatorModel.getUserAuthenticators({
+            institution_code: 391,
+            account,
+        });
+        let residentKey = "";
+        switch (discoverable_credential) {
+            case "discouraged":
+                residentKey = "discouraged";
+                break;
+            case "preferred":
+                residentKey = "preferred";
+                break;
+            case "required":
+                residentKey = "required";
+                break;
+            default:
+                residentKey = "preferred";
+                break;
+        }
+        if (hints.length > 0) {
+            hints = [hints][0].split(",");
+            if (hints[0] === "security-key" || hints[0] === "hybrid") {
+                attachment = "cross-platform";
+            } else if (hints[0] === "client-device") {
+                attachment = "platform";
+            }
+        } else {
+            attachment = undefined;
+        }
+
+        const options = await SimpleWebAuthnServer.generateRegistrationOptions({
+            rpName,
+            rpID,
+            userID: account,
+            userName: username,
+            // Don't prompt users for additional information about the authenticator
+            // (Recommended for smoother UX)
+            attestationType: attestation,
+            // Prevent users from re-registering existing authenticators
+            excludeCredentials: userFVAuthenticators.map((fv_authenticator) => ({
+                id: base64url.toBuffer(fv_authenticator.fv_credentialID),
+                type: "public-key",
+                // Optional
+                transports: fv_authenticator.transports,
+            })),
+            // See "Guiding use of authenticators via authenticatorSelection" below
+            authenticatorSelection: {
+                // Defaults
+                residentKey,
+                userVerification: user_verification,
+                // Optional
+                authenticatorAttachment: attachment,
+            },
+            supportedAlgorithmIDs: algorithms,
+        });
+        await redis.db2.setUserCurrentChallenge(redis.client, account, options.challenge);
+
+        res.status(200).json(options);
+    } catch (err) {
+        const error = handleErrors(err);
+        res.status(400).json(error);
+    }
+};
+
+const line_pay_financial_verification_attestation_result_post = async (req, res) => {
+    try {
+        const { attResp, account, username } = req.body;
+        const expectedChallenge = await redis.db2.getUserCurrentChallenge(redis.client, account);
+        let verification;
+        verification = await SimpleWebAuthnServer.verifyRegistrationResponse({
+            response: attResp,
+            expectedChallenge,
+            expectedOrigin: origin,
+            expectedRPID: rpID,
+        });
+        const { verified } = verification;
+        if (verified) {
+            const { registrationInfo } = verification;
+            const { credentialPublicKey, credentialID, counter, credentialDeviceType, credentialBackedUp } =
+                registrationInfo;
+            const base64url_FV_CredentialID = base64url.encode(credentialID);
+            const base64url_FV_CredentialPublicKey = base64url.encode(credentialPublicKey);
+            try {
+                await knex.transaction(async (trx) => {
+                    await trx("fv_credential").insert({
+                        id: base64url_FV_CredentialID,
+                        institution_code: 391,
+                        account,
+                    });
+                    await trx("fv_authenticator").insert({
+                        fv_credentialID: base64url_FV_CredentialID,
+                        institution_code: 391,
+                        account,
+                        fv_credentialPublicKey: base64url_FV_CredentialPublicKey,
+                        counter,
+                        credentialDeviceType,
+                        credentialBackedUp,
+                        transports: JSON.stringify(attResp.response.transports),
+                    });
+                    await trx("line_pay")
+                        .where({
+                            institution_code: 391,
+                            account,
+                        })
+                        .update({
+                            isFinancialVerified: true,
+                        });
+                });
+            } catch (transactionError) {
+                // 處理事務錯誤
+                console.error(transactionError);
+            }
+        } else {
+            throw new Error("Verify registration response failed");
+        }
+
+        res.status(200).json({ verified });
+    } catch (err) {
+        const error = handleErrors(err);
+        res.status(400).json(error);
+    }
+};
+
+const line_pay_financial_verification_assertion_get = (req, res) => {
+    res.render("line_pay/financial_verification/fido_assertion");
+};
+
+const line_pay_financial_verification_assertion_options_post = async (req, res) => {
+    try {
+        const { username, userVerification } = req.body;
+        const userInfo = await LinePayModel.getUserInfo({ name: username });
+        const account = userInfo.account;
+        const userFVAuthenticators = await FV_AuthenticatorModel.getUserAuthenticators({
+            institution_code: 391,
+            account,
+        });
+        const options = await SimpleWebAuthnServer.generateAuthenticationOptions({
+            rpID,
+            userVerification,
+            // Require users to use a previously-registered authenticator
+            allowCredentials: userFVAuthenticators.map((fv_authenticator) => ({
+                id: base64url.toBuffer(fv_authenticator.fv_credentialID),
+                type: "public-key",
+                transports: fv_authenticator.transports,
+            })),
+        });
+        await redis.db3.setUserCurrentChallenge(redis.client, account, options.challenge);
+
+        res.status(200).json(options);
+    } catch (err) {
+        const error = handleErrors(err);
+        res.status(400).json(error);
+    }
+};
+
+const line_pay_financial_verification_assertion_result_post = async (req, res) => {
+    try {
+        const { asseResp, username } = req.body;
+        const userInfo = await LinePayModel.getUserInfo({ name: username });
+        const account = userInfo.account;
+        const expectedChallenge = await redis.db3.getUserCurrentChallenge(redis.client, account);
+        let fv_authenticator = await FV_AuthenticatorModel.getUserAuthenticator({
+            institution_code: 391,
+            account,
+            fv_credentialID: asseResp.id,
+        });
+        if (!fv_authenticator) throw new Error(`Could not find fv_authenticator ${asseResp.id} for user ${account}`);
+        // 為了接下來要傳給 SimpleWebAuthnServer.verifyAuthenticationResponse() 的參數做準備，必須遵守 `fv_authenticator` 的資料格式
+        fv_authenticator.credentialID = base64url.toBuffer(fv_authenticator.fv_credentialID);
+        fv_authenticator.credentialPublicKey = base64url.toBuffer(fv_authenticator.fv_credentialPublicKey);
+        delete fv_authenticator.fv_credentialID;
+        delete fv_authenticator.fv_credentialPublicKey;
+
+        let verification;
+        verification = await SimpleWebAuthnServer.verifyAuthenticationResponse({
+            response: asseResp,
+            expectedChallenge,
+            expectedOrigin: origin,
+            expectedRPID: rpID,
+            authenticator: fv_authenticator,
+        });
+        const { verified } = verification;
+        const { authenticationInfo } = verification;
+        const { newCounter } = authenticationInfo;
+        await FV_AuthenticatorModel.updatedAuthenticatorCounter({ fv_credentialID: asseResp.id, newCounter });
+        let institutionCode = 391;
+        const fvToken = createToken(account, institutionCode);
+        res.cookie("fvToken", fvToken, {
+            httpOnly: true,
+            maxAge: maxValidDuration * 1000, // 以毫秒為單位
+        });
+
+        res.status(200).json({ verified });
+    } catch (err) {
+        const error = handleErrors(err);
+        res.status(400).json(error);
+    }
 };
 
 const line_pay_transfer_get = (req, res) => {
@@ -516,7 +734,13 @@ module.exports = {
     line_pay_deposit_post,
     line_pay_withdraw_get,
     line_pay_withdraw_post,
-    line_pay_authentication_get,
+    line_pay_financial_verification_get,
+    line_pay_financial_verification_attestation_get,
+    line_pay_financial_verification_attestation_options_post,
+    line_pay_financial_verification_attestation_result_post,
+    line_pay_financial_verification_assertion_get,
+    line_pay_financial_verification_assertion_options_post,
+    line_pay_financial_verification_assertion_result_post,
     line_pay_transfer_get,
     line_pay_transfer_post,
     line_pay_inter_agency_transfer_get,

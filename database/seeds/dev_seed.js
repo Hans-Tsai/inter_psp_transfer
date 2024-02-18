@@ -7,6 +7,9 @@ const JkoPayModel = require("../../models/JkoPayModel");
  * @returns { Promise<void> }
  */
 module.exports.seed = async function (knex) {
+    // 刪除資料表
+    await knex.schema.dropTableIfExists("fv_authenticator");
+    await knex.schema.dropTableIfExists("fv_credential");
     await knex.schema.dropTableIfExists("authenticator");
     await knex.schema.dropTableIfExists("credential");
     await knex.schema.dropTableIfExists("line_pay");
@@ -54,7 +57,7 @@ module.exports.seed = async function (knex) {
             table.string("password").notNullable().defaultTo("000000");
             table.string("name").notNullable().unique();
             table.integer("balance").notNullable().defaultTo(0);
-            table.boolean("authenticated").defaultTo(false);
+            table.boolean("isFinancialVerified").defaultTo(false);
         });
         // 填充資料表的範例數據
         await LinePayModel.createUser({ account: "1234567891", password: "000000", username: "admin" });
@@ -70,7 +73,7 @@ module.exports.seed = async function (knex) {
             table.string("password").notNullable().defaultTo("000000");
             table.string("name").notNullable().unique();
             table.integer("balance").notNullable().defaultTo(0);
-            table.boolean("authenticated").defaultTo(false);
+            table.boolean("isFinancialVerified").defaultTo(false);
         });
         // 填充資料表的範例數據
         await JkoPayModel.createUser({ account: "987654321", password: "000000", username: "admin"});
@@ -116,6 +119,38 @@ module.exports.seed = async function (knex) {
             table.string('account').notNullable();
             // SQL: Encode to base64url then store as `STRING`.
             table.string('credentialPublicKey');
+            table.bigInteger('counter');
+            table.string('credentialDeviceType', 32);
+            table.boolean('credentialBackedUp');
+            // SQL: 為了儲存 string array 可以用 JSON 格式
+            table.json('transports');  // e.g. Ex: ['usb', 'ble', 'nfc', 'internal']
+        });
+    }
+
+    // 檢查資料表是否存在
+    const fv_credential_exists = await knex.schema.hasTable("fv_credential");
+    if (!fv_credential_exists) {
+        // 建立資料表
+        await knex.schema.createTable("fv_credential", (table) => {
+            // SQL: Encode to base64url then store as `STRING`. Index this column
+            table.string("id", 255).primary();
+            table.integer("institution_code").references("platform.institution_code").notNullable();
+            table.string("account").notNullable();
+            table.timestamp("created_at").defaultTo(knex.fn.now());
+        });
+    }
+
+    // 檢查資料表是否存在
+    const fv_authenticator_exists = await knex.schema.hasTable("fv_authenticator");
+    if (!fv_authenticator_exists) {
+        // 建立資料表
+        await knex.schema.createTable("fv_authenticator", (table) => {
+            // SQL: Encode to base64url then store as `STRING`. Index this column
+            table.string('fv_credentialID', 255).references("fv_credential.id").notNullable().unique().index();
+            table.integer('institution_code').notNullable();
+            table.string('account').notNullable();
+            // SQL: Encode to base64url then store as `STRING`.
+            table.string('fv_credentialPublicKey');
             table.bigInteger('counter');
             table.string('credentialDeviceType', 32);
             table.boolean('credentialBackedUp');

@@ -4,14 +4,13 @@ const jwt = require("jsonwebtoken");
 const util = require("util");
 const verify = util.promisify(jwt.verify);
 
-/** 建立一個能被重複使用的中介函數，來驗證客戶端 `cookie` 內的 `JWT token` 存在 & 有效 */
+/** 能被重複使用的中介函數，來驗證客戶端 `cookie` 內的 `JWT token` 存在 & 有效 */
 const requireAuth = async (req, res, next) => {
     // 將客戶端的 `JWT token` 從 `request` 物件中的 `cookies` 解析出來
     const jwtToken = req.cookies.jwt;
     let decodedToken;
     let institutionCode;
     let tableName;
-    let rows;
 
     if (req.query["institution_code"]) {
         institutionCode = req.query["institution_code"];
@@ -26,12 +25,6 @@ const requireAuth = async (req, res, next) => {
         try {
             decodedToken = await verify(jwtToken, config.server.jwt_secret);
             // console.log(decodedToken);
-            institutionCode = decodedToken["institution_code"];
-            // rows 是一個包含查詢結果的陣列
-            rows = await knex("platform")
-                .select("institution_code", "table")
-                .where("institution_code", institutionCode);
-            tableName = rows[0].table;
             // 若客戶端通過驗證 `JWT token` 存在 & 有效，繼續執行接下來的程式(=> `next()`)
             next();
         } catch (err) {
@@ -45,7 +38,7 @@ const requireAuth = async (req, res, next) => {
     }
 };
 
-/** 建立一個能夠確認當前的使用者的中介函數 */
+/** 確認當前的使用者的中介函數 */
 const checkUser = async (req, res, next) => {
     const jwtToken = req.cookies.jwt;
     if (jwtToken) {
@@ -70,7 +63,37 @@ const checkUser = async (req, res, next) => {
     next();
 };
 
+/** 檢查當前使用者，應進行二次金融驗證 (financial verification) */
+const checkFinancialVerification = async (req, res, next) => {
+    const fvToken = req.cookies.fvToken;
+    let decodedToken;
+    let institutionCode;
+    let tableName;
+
+    if (req.query["institution_code"]) {
+        institutionCode = req.query["institution_code"];
+        const rows = await knex("platform")
+            .select("institution_code", "table")
+            .where("institution_code", institutionCode);
+        tableName = rows[0].table;
+    }
+
+    if (fvToken) {
+        try {
+            decodedToken = await verify(fvToken, config.server.jwt_secret);
+            // console.log(decodedToken);
+            next();
+        } catch (error) {
+            console.log(error.message);
+            res.redirect(`/${tableName}/financial_verification/assertion`);
+        }
+    } else {
+        res.redirect(`/${tableName}/financial_verification/assertion`);
+    }
+};
+
 module.exports = {
     requireAuth,
     checkUser,
+    checkFinancialVerification,
 };
