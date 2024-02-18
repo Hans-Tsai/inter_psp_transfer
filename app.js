@@ -90,7 +90,12 @@ async function gracefulShutdown() {
 }
 
 // 處理終止信號
-process.on("SIGINT", gracefulShutdown); // e.g. Ctrl+C
-process.on("SIGTERM", gracefulShutdown); // e.g. 由 kill 命令發出
+process.on("SIGINT", () => {
+    gracefulShutdown();
+}); // e.g. Ctrl+C
+
+process.on("SIGTERM", () => {
+    gracefulShutdown();
+}); // e.g. 由 kill 命令發出
 
 startServer();
