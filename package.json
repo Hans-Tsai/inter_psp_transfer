@@ -1,7 +1,7 @@
 {
-  "name": "fido_inter_agency_transfer",
+  "name": "inter_psp_transfer",
   "version": "1.0.0",
-  "description": "",
+  "description": "Inter-PSP Transfer: Payment Service Provider (PSP)",
   "main": "index.js",
   "scripts": {
     "start": "nodemon -q app.js",
