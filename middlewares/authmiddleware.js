@@ -1,4 +1,4 @@
-const { config, configUpdated } = require('../config');
+const { config } = require('../config');
 const knex = require("../database/db");
 const jwt = require("jsonwebtoken");
 const util = require("util");

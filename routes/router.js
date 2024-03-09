@@ -1,6 +1,6 @@
 const express = require('express');
-const controller = require('../controllers/controller');
 const router = express.Router();
+const controller = require('../controllers/controller');
 const { requireAuth, checkUser, requireFinancialVerification } = require('../middlewares/authmiddleware');
 
 // 電子支付跨機構共用平台

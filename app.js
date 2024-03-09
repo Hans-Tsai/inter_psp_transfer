@@ -1,5 +1,3 @@
-const path = require("path");
-const url = require("url");
 const util = require("util");
 const fs = require("fs");
 const http = require("http");
@@ -43,8 +41,8 @@ async function startServer() {
         server = https
             .createServer(
                 {
-                    key: fs.readFileSync("./key.pem"),
-                    cert: fs.readFileSync("./cert.pem"),
+                    key: fs.readFileSync("./mydomain.key"),
+                    cert: fs.readFileSync("./mydomain.crt"),
                 },
                 app
             )

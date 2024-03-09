@@ -1,4 +1,4 @@
-# FIDO Inter-Agency Transfer (跨機構轉帳)
+# Inter-PSP Transfer: Payment Service Provider (PSP) (跨支付服務提供商轉帳)
 
 ## 介紹
 - 透過 FIDO2 規範，利用 WebAuthn 協定 ，來模擬實作跨機構轉帳服務
@@ -14,6 +14,11 @@
 - ![alt text](./images/image-2.png)
 
 ## 問題
+
+- 決定論文題目
+  - 利用 FIDO UAF 實現跨支付平台的二次金融身份驗證
+  - **基於 FIDO UAF 的二次身份驗證機制：提升台灣跨支付服務提供商的交易安全**
+
 - Macbook Touch ID 作為 Authenticator，經過 SimpleWebAuthnServer.verifyAuthenticationResponse() 驗證後，理論上 `verification.authenticator.authenticationInfo.newCounter` 應該要自動 +1，以防止重放攻擊。但實際上並沒有自動 +1
 
 ## 知識點
@@ -37,9 +42,15 @@ FIDO UAF和WebAuthn均支持多種加密演算法，包括橢圓曲線演算法�
 - [x] controller 的 **line_pay_attestation_options_post** API 的 `discoverable_credential`, `hints` 參數，需要傳入到 **SimpleWebAuthnServer.generateRegistrationOptions()** 中
 - [x] 實作跨機構身份驗證: 登入有一把私鑰，當要跨機構轉帳時，能用另一把私鑰做驗證
 - [ ] 實作 Jko_Pay
+- [ ] 應讓使用者可以選擇，未來要使用跨機構轉帳服務時，需第一次驗證過就好 or 每次都要驗證身份
+- [ ] 處理 PSP1, PSP2 的 `rpID`, `origin` 的問題，以避免兩組公私鑰對的重複性問題
 
 ## TO Fix
-- [ ] 使用者失去 `jwt`, `fvToken` 時，會無法重新登入，待查原因是什麼？
+- [x] 使用者失去 `jwt`, `fvToken` 時，會無法重新登入，待查原因是什麼？
+  - 因為當 `rpId`, `origin`, `username` 這三個參數相同時，可以將私鑰儲存在不同的地方，以避免在註冊第二組公、私鑰時，被覆蓋掉的問題。使得 RP 能夠區分和管理同一用戶的多個憑證(credential)
+- [ ] 修正 Line Pay 關於 financial verification 流程
+  - [ ] 使用者於註冊 Line Pay 帳戶時，就必須再註冊第二組公、私鑰，作為跨機構轉帳的二次身份驗證所使用
+  - [ ] 當使用者欲執行第一次跨機構轉帳時，需要驗證第二組公私鑰後，更新 DB 中該使用者的 `isFinancialVerified` 欄位成為 `true`
 
 ## 參考資料
 - FIDO

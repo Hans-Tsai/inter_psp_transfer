@@ -1,5 +1,4 @@
-const { config, configUpdated } = require("../config");
-const path = require("path");
+const { config } = require("../config");
 const jwt = require("jsonwebtoken");
 const base64url = require("base64url");
 const knex = require("../database/db");
